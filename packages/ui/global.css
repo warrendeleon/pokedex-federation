@@ -1,0 +1,7 @@
+/* --- Tailwind directives. Consumer apps import this file at the top of their entry point
+ * (index.js) so NativeWind's Babel transformer wires Tailwind classes into the JS output.
+ * The colour tokens + utility class library all flow from these three lines. --- */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
