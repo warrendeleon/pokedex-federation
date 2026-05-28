@@ -1,0 +1,52 @@
+# --- Local npm registry config for the @pokedex/* scope.
+# Start with:    ./scripts/verdaccio.sh
+# Publish:       cd packages/<name> && npm version <semver> && npm publish
+# Consumers in apps/* pick it up via the root .npmrc that scopes @pokedex/ to localhost:4873.
+#
+# Storage is repo-local (./verdaccio-storage) so each clone has its own published versions and
+# nothing leaks to the global filesystem.
+# ---
+
+storage: ./verdaccio-storage
+
+# --- Web UI on http://localhost:4873 ---
+web:
+  enable: true
+  title: Pokédex Federation Local Registry
+
+# --- htpasswd-based auth lives next to storage so it persists per-checkout but is gitignored. ---
+auth:
+  htpasswd:
+    file: ./verdaccio-storage/htpasswd
+    algorithm: bcrypt
+    # `max_users: -1` would disable signup; we leave the default so engineers can `npm adduser`.
+
+# --- Proxy uplink: any package NOT in the @pokedex scope still resolves through npmjs.org. ---
+uplinks:
+  npmjs:
+    url: https://registry.npmjs.org/
+
+packages:
+  # --- The whole point of this registry: hosting @pokedex/* packages locally. ---
+  '@pokedex/*':
+    access: $all
+    publish: $authenticated
+    unpublish: $authenticated
+
+  # --- Any other scoped package: read from npmjs uplink, no local publishing. ---
+  '@*/*':
+    access: $all
+    publish: $authenticated
+    proxy: npmjs
+
+  # --- Anything unscoped: same. ---
+  '**':
+    access: $all
+    publish: $authenticated
+    proxy: npmjs
+
+# --- Telemetry off and CORS open (handy for local browser UI without auth headaches). ---
+log:
+  type: stdout
+  format: pretty
+  level: warn
