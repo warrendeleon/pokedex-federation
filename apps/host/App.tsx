@@ -1,45 +1,49 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
+import React, {useEffect, useState} from 'react';
+import {ActivityIndicator, View} from 'react-native';
+import {Provider} from 'react-redux';
+import {PersistGate} from 'redux-persist/integration/react';
+import {NavigationContainer} from '@react-navigation/native';
+import {SafeAreaProvider} from 'react-native-safe-area-context';
+import {GluestackUIProvider} from '@pokedex/ui';
+import {registerShellNavigateHandler} from '@pokedex/contracts';
+import {store, persistor} from './src/shell/store';
+import {AppNavigator} from './src/shell/AppNavigator';
+import {initializeFederation} from './src/shell/scriptManager';
+import {navigationRef, shellNavigateHandler} from './src/shell/shellNavigation';
 
-import { NewAppScreen } from '@react-native/new-app-screen';
-import { StatusBar, StyleSheet, useColorScheme, View } from 'react-native';
-import {
-  SafeAreaProvider,
-  useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+// --- Wire the shell.navigateTo bridge once at module load, before any remote can call it.
+// Federated remotes import shellNavigate from @pokedex/contracts; it proxies through globalThis
+// to this handler. Registering here (module scope) guarantees the handler exists before the
+// navigator mounts. ---
+registerShellNavigateHandler(shellNavigateHandler);
 
-function App() {
-  const isDarkMode = useColorScheme() === 'dark';
+export default function App() {
+  // --- Federation gate. The navigator (where the React.lazy federated tabs live) must not
+  // mount until initializeFederation has resolved the mode + wired the resolver, or the MF
+  // runtime could fire a manifest fetch before the shell's plugins are ready. ---
+  const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    initializeFederation().finally(() => setReady(true));
+  }, []);
 
   return (
-    <SafeAreaProvider>
-      <StatusBar barStyle={isDarkMode ? 'light-content' : 'dark-content'} />
-      <AppContent />
-    </SafeAreaProvider>
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        <GluestackUIProvider mode="light">
+          <SafeAreaProvider>
+            {ready ? (
+              <NavigationContainer ref={navigationRef}>
+                <AppNavigator />
+              </NavigationContainer>
+            ) : (
+              <View style={{flex: 1, justifyContent: 'center'}}>
+                <ActivityIndicator />
+              </View>
+            )}
+          </SafeAreaProvider>
+        </GluestackUIProvider>
+      </PersistGate>
+    </Provider>
   );
 }
-
-function AppContent() {
-  const safeAreaInsets = useSafeAreaInsets();
-
-  return (
-    <View style={styles.container}>
-      <NewAppScreen
-        templateFileName="App.tsx"
-        safeAreaInsets={safeAreaInsets}
-      />
-    </View>
-  );
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
-
-export default App;

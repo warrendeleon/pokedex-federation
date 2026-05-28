@@ -2,7 +2,9 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import * as Repack from '@callstack/repack';
 import rspack from '@rspack/core';
-import {getMFShared} from './mf-shared.mjs';
+import {NativeWindPlugin} from '@callstack/repack-plugin-nativewind';
+import {getMFShared} from '../../mf-shared.mjs';
+import pkg from './package.json' with {type: 'json'};
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -74,6 +76,7 @@ export default Repack.defineRspackConfig(env => {
       // version-map is fetched. ---
       new Repack.plugins.ModuleFederationPluginV2({
         name: 'host',
+        filename: 'host.container.js.bundle',
         dts: false,
         remotes: {
           listApp:    remoteUrl('listApp'),
@@ -81,13 +84,20 @@ export default Repack.defineRspackConfig(env => {
           regionsApp: remoteUrl('regionsApp'),
           detailApp:  remoteUrl('detailApp'),
         },
-        shared: getMFShared('host'),
+        shared: getMFShared('host', pkg),
       }),
       // --- Inject the build-time CDN base into the JS bundle so scriptManager.ts's resolver
       // uses the same URL the MF V2 manifest URLs reference. ---
       new rspack.DefinePlugin({
         __MF_CDN_BASE__: JSON.stringify(PROD_CDN_BASE),
       }),
+      // --- NativeWind: configures PostCSS + Tailwind processing of global.css and the
+      // SWC transforms for nativewind's JSX runtime. Official Re.Pack integration; no
+      // hand-rolled postcss-loader wiring. ---
+      new NativeWindPlugin(),
+      // --- @react-navigation/elements optionally requires masked-view (only for masked
+      // headers, which we don't use). Ignore it to keep the build warning-free. ---
+      new rspack.IgnorePlugin({resourceRegExp: /^@react-native-masked-view/}),
     ],
   };
 });
