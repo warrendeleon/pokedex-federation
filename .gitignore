@@ -1,0 +1,36 @@
+# macOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Node / npm
+node_modules/
+npm-debug.log
+yarn-error.log
+*.tsbuildinfo
+
+# RN/iOS/Android — per-app .gitignore handles app-specific entries; this catches strays
+*.jsbundle
+**/build/
+**/DerivedData/
+**/Pods/
+**/vendor/bundle/
+
+# Built remote bundles (produced by bundle:remotes:*, served via serve:cdn)
+# cdn/* (not cdn/) so the negation below can re-include specific tracked files
+cdn/*
+# version-map.json is source-of-truth, not a build artefact, so keep it tracked
+!cdn/version-map.json
+
+# Verdaccio storage (local npm registry persistence)
+.verdaccio/
+verdaccio-storage/
+
+# Logs + scratch
+*.log
+.tmp/
+.scratch/
