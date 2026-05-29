@@ -54,8 +54,8 @@ function PartyMainScreen() {
   return (
     <ScreenContainer variant="dark">
       <Box className="p-3">
-        <Button onPress={onQuickBattle} size="lg">
-          <ButtonText>Quick Battle</ButtonText>
+        <Button onPress={onQuickBattle} size="lg" className="bg-type-electric">
+          <ButtonText className="text-black">Quick Battle</ButtonText>
         </Button>
         {winnerName ? (
           <Text className="text-white mt-3 text-center">
