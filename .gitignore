@@ -34,3 +34,6 @@ verdaccio-storage/
 *.log
 .tmp/
 .scratch/
+
+# Local stand-in CDN assembled by tools/build-cdn.mjs
+cdn-root/
