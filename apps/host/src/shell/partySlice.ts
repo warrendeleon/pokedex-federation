@@ -1,4 +1,18 @@
-import {createSlice, type PayloadAction} from '@reduxjs/toolkit';
+import {createAction, createSlice, type PayloadAction} from '@reduxjs/toolkit';
+import {CROSS_MODULE_ACTIONS} from '@pokedex/contracts';
+
+// --- Typed action creator for the cross-module QuickBattle result. createAction binds the
+// contract's string type to a payload shape so extraReducers gets full typing; partyApp can
+// still dispatch the plain {type, payload} object (identical shape) without importing this. ---
+interface BattleResultPayload {
+  winnerId: number;
+  leftId: number;
+  rightId: number;
+  ko: boolean;
+}
+const battleResult = createAction<BattleResultPayload>(
+  CROSS_MODULE_ACTIONS.party.battleResult,
+);
 
 // --- Host-owned, cross-cutting state: the player's party of up to 6 Pokémon. Lives in the
 // host store from boot (not injected by a remote) because three different remotes read or
@@ -49,6 +63,15 @@ const partySlice = createSlice({
     setLastBattleWinner(state, action: PayloadAction<number | null>) {
       state.lastBattleWinnerId = action.payload;
     },
+  },
+  extraReducers: builder => {
+    // --- Cross-module: the native QuickBattle flow (partyApp -> shell.navigateTo -> native
+    // screen -> back) dispatches this contract action with the winner. Handling it here, instead
+    // of partyApp importing setLastBattleWinner, keeps the remote decoupled: it dispatches the
+    // string-typed action from @pokedex/contracts and this host-owned slice reacts. ---
+    builder.addCase(battleResult, (state, action) => {
+      state.lastBattleWinnerId = action.payload.winnerId;
+    });
   },
   selectors: {
     selectParty: state => state.members,

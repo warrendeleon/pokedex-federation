@@ -1,10 +1,10 @@
-import {NativeModules} from 'react-native';
 import type {Middleware} from '@reduxjs/toolkit';
 import {
   BRIDGE_KEYS,
   MODULES,
   type BridgeEnvelope,
 } from '@pokedex/contracts';
+import StoreObserverModule from '../../specs/NativeStoreObserverModule';
 
 // --- Redux middleware that pushes structured envelopes to the native side after every action.
 // Unidirectional (RN → Native): a native status badge reads the live party count + last battle
@@ -15,18 +15,12 @@ import {
 // Guarded: if StoreObserverModule isn't linked yet (e.g. before the native module ships, or on
 // a platform where it's absent), the middleware is a transparent pass-through. ---
 
-type StoreObserverNative = {
-  updateState: (dataKey: string, payloadJson: string) => void;
-};
-
-const nativeStore: StoreObserverNative | undefined = (
-  NativeModules as Record<string, unknown>
-).StoreObserverModule as StoreObserverNative | undefined;
-
 function push<T>(dataKey: BridgeEnvelope['dataKey'], moduleId: BridgeEnvelope['moduleId'], payload: T) {
-  if (!nativeStore?.updateState) return;
+  // StoreObserverModule resolves via TurboModuleRegistry.get (non-enforcing), so it's null when
+  // the module isn't linked and the middleware stays a transparent pass-through.
+  if (!StoreObserverModule) return;
   const envelope: BridgeEnvelope<T> = {version: 1, moduleId, dataKey, payload};
-  nativeStore.updateState(dataKey, JSON.stringify(envelope));
+  StoreObserverModule.updateState(dataKey, JSON.stringify(envelope));
 }
 
 // --- Reads the slice of state we mirror to native and pushes any envelopes whose value

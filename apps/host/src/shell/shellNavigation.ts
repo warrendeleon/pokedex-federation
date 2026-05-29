@@ -1,10 +1,10 @@
-import {NativeModules} from 'react-native';
 import {createNavigationContainerRef} from '@react-navigation/native';
 import {
   ROUTE_REGISTRY,
   type ShellNavigateFn,
   type ShellNavigateResult,
 } from '@pokedex/contracts';
+import ShellNavigationModule from '../../specs/NativeShellNavigationModule';
 import type {RootStackParamList} from './navigationTypes';
 
 // --- Host-side implementation of shell.navigateTo. Resolves a destination name against
@@ -15,17 +15,6 @@ import type {RootStackParamList} from './navigationTypes';
 
 export const navigationRef = createNavigationContainerRef<RootStackParamList>();
 
-type ShellNavigationNative = {
-  openNative: (
-    nativeId: string,
-    params: Record<string, unknown> | null,
-  ) => Promise<ShellNavigateResult>;
-};
-
-const nativeBridge: ShellNavigationNative | undefined = (
-  NativeModules as Record<string, unknown>
-).ShellNavigationModule as ShellNavigationNative | undefined;
-
 export const shellNavigateHandler: ShellNavigateFn = async (destination, params) => {
   const entry = ROUTE_REGISTRY[destination];
   if (!entry) {
@@ -34,13 +23,14 @@ export const shellNavigateHandler: ShellNavigateFn = async (destination, params)
   }
 
   if (entry.type === 'native') {
-    if (!nativeBridge?.openNative) {
-      console.warn(
-        `[shellNavigate] native destination "${destination}" requested but ShellNavigationModule is not linked`,
-      );
-      return undefined;
-    }
-    return nativeBridge.openNative(entry.nativeId, params ?? null);
+    // Round-trip the native flow: hand it the input as JSON, await the result JSON it resolves
+    // with. ShellNavigationModule is a required shell capability (getEnforcing), so a missing
+    // module fails loudly rather than silently dropping navigation.
+    const resultJson = await ShellNavigationModule.openNative(
+      entry.nativeId,
+      JSON.stringify(params ?? {}),
+    );
+    return resultJson ? (JSON.parse(resultJson) as ShellNavigateResult) : undefined;
   }
 
   if (!navigationRef.isReady()) {

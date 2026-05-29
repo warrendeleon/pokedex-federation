@@ -2,6 +2,14 @@
   "name": "Host",
   "version": "0.0.1",
   "private": true,
+  "codegenConfig": {
+    "name": "HostSpecs",
+    "type": "modules",
+    "jsSrcsDir": "specs",
+    "android": {
+      "javaPackageName": "com.host.specs"
+    }
+  },
   "scripts": {
     "android": "react-native run-android --no-packager",
     "ios": "react-native run-ios --no-packager",
