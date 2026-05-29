@@ -1,6 +1,6 @@
 {
   "name": "@pokedex/contracts",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "description": "Stable cross-boundary contract: route registry, action strings, native bridge keys, MF shared declarations. Bundled into both the host and every federated remote.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -18,10 +18,14 @@
     "registry": "http://localhost:4873/"
   },
   "devDependencies": {
+    "@reduxjs/toolkit": "^2.12.0",
+    "react-redux": "^9.3.0",
     "typescript": "^5.8.3"
   },
   "peerDependencies": {
+    "@reduxjs/toolkit": ">=2.10.0",
     "react": "*",
-    "react-native": "*"
+    "react-native": "*",
+    "react-redux": ">=9"
   }
 }
