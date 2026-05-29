@@ -40,6 +40,18 @@ export default Repack.defineRspackConfig(env => {
     mode,
     context: __dirname,
     entry: './index.js',
+    // --- Federation provider rule: the host shares @pokedex/ui (+ contracts) as eager
+    // singletons, so the host IS the single copy every remote renders against. Used-exports
+    // tree-shaking assumes a closed module graph and prunes any export the host itself never
+    // imports; here that silently dropped the entire primitives barrel (Box, Text, Image, …)
+    // from the shared namespace, so remotes importing those got `undefined` and crashed at
+    // render. The set of exports a remote may need is unknown at host-build time, so the
+    // provider must keep a shared library's FULL public API. Disabling usedExports does exactly
+    // that. The cost is a few unused-export bindings in the host bundle, which is correct for a
+    // federation host whose job is to expose complete shared singletons. ---
+    optimization: {
+      usedExports: false,
+    },
     resolve: {
       ...Repack.getResolveOptions({enablePackageExports: true}),
     },

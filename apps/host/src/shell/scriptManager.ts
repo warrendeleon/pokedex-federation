@@ -9,10 +9,17 @@ import {mmkvStorage} from './storage';
 // custom resolver later, for the PROD bundled-offline fallback (file:// URLs), per-launch
 // version resolution, and health-driven rollback.
 //
-// All this file does today: back the script cache with MMKV, expose the boot-time federation
-// gate, and provide the retry path for FederatedTabBoundary. ---
+// All this file does today: back the PROD script cache with MMKV, expose the boot-time
+// federation gate, and provide the retry path for FederatedTabBoundary. ---
 
-ScriptManager.shared.setStorage(mmkvStorage);
+// --- Persistent script cache: PROD only. In PROD this lets a fetched container survive app
+// restarts so the app boots offline from the last-known-good bundle. In DEV it must NOT be set:
+// MMKV would serve a cached container across reloads, so every remote edit becomes invisible
+// until the app is reinstalled. In DEV the dev server is the single source of truth, fetched
+// fresh each launch. ---
+if (!__DEV__) {
+  ScriptManager.shared.setStorage(mmkvStorage);
+}
 
 const REMOTE_DEV_PORTS: Record<string, number> = {
   listApp: 8082,
