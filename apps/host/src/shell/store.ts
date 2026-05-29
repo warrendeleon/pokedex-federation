@@ -9,7 +9,7 @@ import {
   PURGE,
   REGISTER,
 } from 'redux-persist';
-import {baseApi} from './api';
+import {baseApi} from '@pokedex/contracts';
 import partySlice from './partySlice';
 import {nativeBridgeMiddleware} from './nativeBridge';
 import {mmkvStorage} from './storage';

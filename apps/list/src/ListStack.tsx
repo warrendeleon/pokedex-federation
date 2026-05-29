@@ -2,29 +2,24 @@ import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {useSelector} from 'react-redux';
-import {ScreenContainer, PokemonGrid, Box, type PokemonGridEntry} from '@pokedex/ui';
+import {
+  ScreenContainer,
+  PokemonGrid,
+  Box,
+  LoadingState,
+  ErrorState,
+} from '@pokedex/ui';
 import {shellNavigate} from '@pokedex/contracts';
-import {artworkUri} from './pokeApi';
+import {useGetPokemonListQuery} from './listApi';
 
-// --- listApp's exposed navigation stack: the Pokédex grid. Loaded into the host's tab via
-// Module Federation. Proves the federation boundary end-to-end: the remote composes the shared
-// @pokedex/ui design system (PokemonGrid is FlashList-backed, a host-provided singleton),
-// navigates cross-feature through shell.navigateTo (to the detailApp remote), reads the
-// host-owned party count, and styles via the shared NativeWind registry, all resolved from the
-// host's singleton instances. The header is plain RN + StyleSheet (screen chrome, not design-
-// system components), matching the reference. Real PokéAPI list data arrives next. ---
+// --- listApp's exposed navigation stack: the Pokédex grid, loaded into the host's tab via Module
+// Federation. It composes the shared @pokedex/ui design system (FlashList-backed PokemonGrid),
+// fetches real PokéAPI data through an endpoint it injects into the host's shared RTK Query
+// baseApi, reads the host-owned party count, and navigates cross-feature via shell.navigateTo to
+// the detailApp remote, all resolved from the host's singleton instances. The header is plain RN
+// (screen chrome), matching the reference. ---
 
 const Stack = createNativeStackNavigator();
-
-// A small static slice of Gen-1 so the grid renders meaningfully before the API is wired.
-const DEMO: PokemonGridEntry[] = [
-  {id: 1, name: 'Bulbasaur', types: ['grass', 'poison'], spriteUri: artworkUri(1)},
-  {id: 4, name: 'Charmander', types: ['fire'], spriteUri: artworkUri(4)},
-  {id: 7, name: 'Squirtle', types: ['water'], spriteUri: artworkUri(7)},
-  {id: 25, name: 'Pikachu', types: ['electric'], spriteUri: artworkUri(25)},
-  {id: 39, name: 'Jigglypuff', types: ['normal', 'fairy'], spriteUri: artworkUri(39)},
-  {id: 94, name: 'Gengar', types: ['ghost', 'poison'], spriteUri: artworkUri(94)},
-];
 
 interface PartySliceShape {
   party?: {members: {id: number}[]};
@@ -33,6 +28,8 @@ const MAX_PARTY = 6;
 
 function ListMainScreen() {
   const partyCount = useSelector((s: PartySliceShape) => s.party?.members.length ?? 0);
+  const {data, isLoading, isError, refetch} = useGetPokemonListQuery();
+
   return (
     <ScreenContainer>
       <View style={styles.header}>
@@ -43,11 +40,17 @@ function ListMainScreen() {
       </View>
       <Text style={styles.subtitle}>Add up to 6 Pokémon to your party</Text>
       <Box className="flex-1">
-        <PokemonGrid
-          data={DEMO}
-          numColumns={3}
-          onPressItem={entry => shellNavigate('PokemonDetail', {id: entry.id})}
-        />
+        {isLoading ? (
+          <LoadingState caption="Loading Pokédex…" />
+        ) : isError || !data ? (
+          <ErrorState onRetry={refetch} />
+        ) : (
+          <PokemonGrid
+            data={data}
+            numColumns={3}
+            onPressItem={entry => shellNavigate('PokemonDetail', {id: entry.id})}
+          />
+        )}
       </Box>
     </ScreenContainer>
   );
