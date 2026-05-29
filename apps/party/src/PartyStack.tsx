@@ -1,4 +1,5 @@
 import React from 'react';
+import {StyleSheet, Text as RNText, View} from 'react-native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {useDispatch, useSelector} from 'react-redux';
 import {
@@ -59,7 +60,11 @@ function PartyMainScreen() {
 
   return (
     <ScreenContainer variant="dark">
-      <Box className="p-3">
+      <View style={styles.header}>
+        <RNText style={styles.title}>My Party</RNText>
+        <RNText style={styles.subtitle}>{members.length} of 6 Pokémon ready</RNText>
+      </View>
+      <Box className="px-3 pb-2">
         <Button onPress={onQuickBattle} size="lg" className="bg-type-electric" isDisabled={members.length === 0}>
           <ButtonText className="text-black">Quick Battle</ButtonText>
         </Button>
@@ -87,14 +92,16 @@ function PartyMainScreen() {
   );
 }
 
+const styles = StyleSheet.create({
+  header: {paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4},
+  title: {fontSize: 28, fontWeight: '700', color: '#FFFFFF'},
+  subtitle: {fontSize: 14, color: '#9A9AB0', marginTop: 2},
+});
+
 export function PartyStack() {
   return (
     <Stack.Navigator>
-      <Stack.Screen
-        name="PartyMain"
-        component={PartyMainScreen}
-        options={{title: 'My Party'}}
-      />
+      <Stack.Screen name="PartyMain" component={PartyMainScreen} options={{headerShown: false}} />
     </Stack.Navigator>
   );
 }

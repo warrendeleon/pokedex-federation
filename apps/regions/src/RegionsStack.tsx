@@ -1,4 +1,5 @@
 import React from 'react';
+import {StyleSheet, Text as RNText, View} from 'react-native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {ScreenContainer, FlashList, Card, Text, Pressable} from '@pokedex/ui';
 import {shellNavigate} from '@pokedex/contracts';
@@ -22,6 +23,10 @@ const REGIONS: {name: string; gen: string; starterId: number}[] = [
 function RegionsMainScreen() {
   return (
     <ScreenContainer>
+      <View style={styles.header}>
+        <RNText style={styles.title}>Regions</RNText>
+        <RNText style={styles.subtitle}>Tap a region to meet its starter</RNText>
+      </View>
       <FlashList
         data={REGIONS}
         keyExtractor={region => region.name}
@@ -44,14 +49,16 @@ function RegionsMainScreen() {
   );
 }
 
+const styles = StyleSheet.create({
+  header: {paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4},
+  title: {fontSize: 28, fontWeight: '700', color: '#2E3138'},
+  subtitle: {fontSize: 14, color: '#515151', marginTop: 2},
+});
+
 export function RegionsStack() {
   return (
     <Stack.Navigator>
-      <Stack.Screen
-        name="RegionsMain"
-        component={RegionsMainScreen}
-        options={{title: 'Regions'}}
-      />
+      <Stack.Screen name="RegionsMain" component={RegionsMainScreen} options={{headerShown: false}} />
     </Stack.Navigator>
   );
 }
