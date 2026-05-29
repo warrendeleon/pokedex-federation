@@ -52,7 +52,7 @@ export function PokemonDetailScreen({route}: Props) {
         <Image
           source={{uri: artworkUri(id)}}
           alt={entry.name}
-          className="w-48 h-48"
+          size="2xl"
           resizeMode="contain"
         />
       </Box>
