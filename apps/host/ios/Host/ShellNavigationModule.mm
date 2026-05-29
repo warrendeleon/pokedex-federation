@@ -37,8 +37,23 @@ RCT_EXPORT_MODULE()
         @"paramsJson": paramsJson ?: @"{}",
       }];
     };
+    // Deep-link warm path: a URL arriving while the app runs emits straight to JS.
+    ShellEventBridge.shared.deepLinkHandler = ^(NSString *url) {
+      ShellNavigationModule *strongSelf = weakSelf;
+      if (strongSelf == nil) {
+        return;
+      }
+      [strongSelf emitOnDeepLink:@{@"url": url ?: @""}];
+    };
   }
   return self;
+}
+
+// Cold-start pull: JS drains the URL that launched the app (empty string if none).
+- (void)consumeInitialDeepLink:(RCTPromiseResolveBlock)resolve
+                        reject:(RCTPromiseRejectBlock)reject
+{
+  resolve([ShellEventBridge.shared consumeInitialDeepLink]);
 }
 
 - (void)openNative:(NSString *)nativeId

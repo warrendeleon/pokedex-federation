@@ -53,6 +53,33 @@ import SwiftUI
   @objc public func requestNavigate(destination: String, paramsJson: String) {
     requestHandler?(destination, paramsJson)
   }
+
+  // MARK: Deep / universal links
+
+  /// Set by ShellNavigationModule. Emits a deep-link URL to JS (the warm path).
+  @objc public var deepLinkHandler: ((String) -> Void)?
+
+  /// The URL that launched the app, held until JS drains it via consumeInitialDeepLink. Only used
+  /// on cold start, when AppDelegate receives the link before the JS handler is attached.
+  private var pendingDeepLink: String?
+
+  /// Called by AppDelegate for every inbound URL (custom scheme or universal link). If JS is
+  /// already listening, push it straight through; otherwise buffer it for the cold-start drain.
+  @objc public func handleDeepLink(url: String) {
+    if let handler = deepLinkHandler {
+      handler(url)
+    } else {
+      pendingDeepLink = url
+    }
+  }
+
+  /// Drained once by JS on startup. Returns the buffered launch URL (empty string if none) and
+  /// clears it, so a cold-start link routes exactly once.
+  @objc public func consumeInitialDeepLink() -> String {
+    let url = pendingDeepLink ?? ""
+    pendingDeepLink = nil
+    return url
+  }
 }
 
 // MARK: - Presenter (ObjC++ TurboModule -> SwiftUI bridge)

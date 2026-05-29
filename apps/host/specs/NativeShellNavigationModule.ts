@@ -22,9 +22,20 @@ export interface ShellNavigateRequest {
   paramsJson: string;
 }
 
+export interface DeepLinkEvent {
+  url: string;
+}
+
 export interface Spec extends TurboModule {
   openNative(nativeId: string, paramsJson: string): Promise<string>;
   readonly onShellNavigate: EventEmitter<ShellNavigateRequest>;
+  // --- Deep / universal links. AppDelegate hands the raw URL to ShellEventBridge; the host
+  // resolves it to a ROUTE_REGISTRY destination and navigates through shellNavigateHandler, so a
+  // link can open any screen, RN or native, off the one routing table. Two paths mirror RN's own
+  // Linking API: onDeepLink is the warm push (app already running); consumeInitialDeepLink is the
+  // cold pull (the URL that launched the app, buffered natively until JS is ready to drain it). ---
+  readonly onDeepLink: EventEmitter<DeepLinkEvent>;
+  consumeInitialDeepLink(): Promise<string>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('ShellNavigationModule');

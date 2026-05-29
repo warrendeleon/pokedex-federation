@@ -58,7 +58,71 @@ export const shellNavigateHandler: ShellNavigateFn = async (destination, params)
 // destination + params; we route it through the SAME shellNavigateHandler that JS callers use, so
 // native-driven navigation and micro-app navigation share one code path and one routing table.
 // Native fires this only on user interaction, long after the navigator is ready. ---
-ShellNavigationModule.onShellNavigate(request => {
-  const params = request.paramsJson ? JSON.parse(request.paramsJson) : {};
-  void shellNavigateHandler(request.destination, params);
-});
+// Guarded against JS-ahead-of-native build skew (see onDeepLink below): skip rather than crash if
+// the event method isn't on the running binary yet.
+if (typeof ShellNavigationModule.onShellNavigate === 'function') {
+  ShellNavigationModule.onShellNavigate(request => {
+    const params = request.paramsJson ? JSON.parse(request.paramsJson) : {};
+    void shellNavigateHandler(request.destination, params);
+  });
+}
+
+// --- Deep / universal links. resolveDeepLink maps a URL onto a ROUTE_REGISTRY destination, so a
+// link routes through the SAME shellNavigateHandler as everything else and can open an RN screen
+// or a native flow alike. It lives in the host (next to the router), not contracts, because the
+// host is the only thing that turns a URL into navigation; the remotes never see links. ---
+export function resolveDeepLink(
+  url: string,
+): {destination: string; params?: Record<string, unknown>} | null {
+  // Strip the scheme (pokedex://); for a universal link, also drop a leading "host.tld" segment.
+  let rest = url.replace(/^[a-z][a-z0-9+.\-]*:\/\//i, '');
+  const firstSlash = rest.indexOf('/');
+  const head = firstSlash === -1 ? rest : rest.slice(0, firstSlash);
+  if (head.includes('.')) {
+    rest = firstSlash === -1 ? '' : rest.slice(firstSlash + 1);
+  }
+  const [resource, value] = rest.split('/').filter(Boolean);
+  switch (resource) {
+    case 'pokemon':
+      return value ? {destination: 'PokemonDetail', params: {id: Number(value)}} : null;
+    case 'party':
+      return {destination: 'Party'};
+    case 'pokedex':
+      return {destination: 'Pokedex'};
+    case 'regions':
+      return {destination: 'Regions'};
+    case 'battle':
+      return {destination: 'QuickBattle'};
+    default:
+      return null;
+  }
+}
+
+function routeDeepLink(url: string): void {
+  const resolved = resolveDeepLink(url);
+  if (resolved) {
+    console.log(`[deepLink] ${url} -> ${resolved.destination}`);
+    void shellNavigateHandler(resolved.destination, resolved.params);
+  } else {
+    console.warn(`[deepLink] unrecognised URL: ${url}`);
+  }
+}
+
+// Warm path: a URL arriving while the app is running. Guarded: on a JS-ahead-of-native build skew
+// (Fast Refresh during dev, or a staged native rollout) the event method may not exist yet; degrade
+// to no-deep-links rather than crash the shell at module load.
+if (typeof ShellNavigationModule.onDeepLink === 'function') {
+  ShellNavigationModule.onDeepLink(event => routeDeepLink(event.url));
+}
+
+// Cold path: drain the URL that launched the app, once navigation is ready. Called from the
+// NavigationContainer's onReady so the navigator exists before we try to route.
+export async function processInitialDeepLink(): Promise<void> {
+  if (typeof ShellNavigationModule.consumeInitialDeepLink !== 'function') {
+    return;
+  }
+  const url = await ShellNavigationModule.consumeInitialDeepLink();
+  if (url) {
+    routeDeepLink(url);
+  }
+}

@@ -10,7 +10,11 @@ import {store, persistor} from './src/shell/store';
 import {AppNavigator} from './src/shell/AppNavigator';
 import {initializeFederation} from './src/shell/scriptManager';
 import {FederationBanner} from './src/shell/FederationBanner';
-import {navigationRef, shellNavigateHandler} from './src/shell/shellNavigation';
+import {
+  navigationRef,
+  shellNavigateHandler,
+  processInitialDeepLink,
+} from './src/shell/shellNavigation';
 
 // --- Wire the shell.navigateTo bridge once at module load, before any remote can call it.
 // Federated remotes import shellNavigate from @pokedex/contracts; it proxies through globalThis
@@ -35,7 +39,7 @@ export default function App() {
           <SafeAreaProvider>
             {ready ? (
               <>
-                <NavigationContainer ref={navigationRef}>
+                <NavigationContainer ref={navigationRef} onReady={processInitialDeepLink}>
                   <AppNavigator />
                 </NavigationContainer>
                 <FederationBanner />
