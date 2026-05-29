@@ -44,6 +44,25 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     ShellEventBridge.shared.handleDeepLink(url: url.absoluteString)
     return true
   }
+
+  // --- Universal links (https://<associated-domain>/...). Same handoff as the custom scheme: hand
+  // the raw URL to ShellEventBridge and let the JS shell resolve it (resolveDeepLink already drops
+  // a leading host segment, so https and pokedex:// URLs map to the same routes). Requires the
+  // associated-domains entitlement plus an apple-app-site-association hosted on the domain and a
+  // signed build; it cannot be exercised on the simulator without those. ---
+  func application(
+    _ application: UIApplication,
+    continue userActivity: NSUserActivity,
+    restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
+  ) -> Bool {
+    guard userActivity.activityType == NSUserActivityTypeBrowsingWeb,
+          let url = userActivity.webpageURL
+    else {
+      return false
+    }
+    ShellEventBridge.shared.handleDeepLink(url: url.absoluteString)
+    return true
+  }
 }
 
 class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {
