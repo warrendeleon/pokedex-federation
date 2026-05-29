@@ -54,7 +54,7 @@ export interface FederationStatus {
   versions: Record<string, string>;
 }
 
-let status: FederationStatus = {mode: 'dev', source: 'metro dev servers', versions: {}};
+let status: FederationStatus = {mode: 'dev', source: 'Re.Pack dev servers', versions: {}};
 let initialized = false;
 
 function cdnManifestUrl(name: string, version: string): string {
@@ -150,7 +150,7 @@ export async function initializeFederation(): Promise<{mode: FederationMode}> {
   initialized = true;
 
   if (__DEV__) {
-    status = {mode: 'dev', source: 'metro dev servers', versions: {}};
+    status = {mode: 'dev', source: 'Re.Pack dev servers', versions: {}};
     return {mode: status.mode};
   }
 
