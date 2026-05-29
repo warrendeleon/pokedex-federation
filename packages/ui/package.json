@@ -1,6 +1,6 @@
 {
   "name": "@pokedex/ui",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Design system for the Pokédex Federation app. Wraps Gluestack v2 primitives with the project's colour tokens, typography, and Pokédex-domain components (PokemonCard, TypeBadge, ScreenContainer, PokemonGrid, LoadingState, ErrorState).",
   "source": "./src/index.ts",
   "main": "./lib/module/index.js",

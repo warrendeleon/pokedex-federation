@@ -11,9 +11,11 @@ import {
 // against the same cache. A TanStack Query equivalent would need every query key known at the
 // shell's build time.
 //
-// PokéAPI's REST list endpoint returns names + resource URLs only, so getPokemonList fetches the
-// page then each Pokémon's detail for its types (sprite is derived from the id, no request). One
-// RTK Query endpoint, one cache entry; the per-Pokémon fetches run once and are cached. ---
+// getPokemonList is an infiniteQuery (RTK Query 2.3+): RTK owns the page accumulation, so the
+// screen never tracks offsets by hand. Each page hits PokéAPI's REST list endpoint (names +
+// resource URLs only), then fetches each Pokémon's detail for its types (the sprite is derived
+// from the id, no request). getNextPageParam advances the offset until a short page signals the
+// end of the Pokédex, which is what drives hasNextPage / fetchNextPage on the hook. ---
 
 const PAGE_SIZE = 24;
 
@@ -23,9 +25,15 @@ const formatName = (name: string) =>
 
 const listApi = baseApi.injectEndpoints({
   endpoints: build => ({
-    getPokemonList: build.query<PokemonSummary[], void>({
-      async queryFn(_arg, _api, _extra, baseQuery) {
-        const page = await baseQuery(`pokemon?limit=${PAGE_SIZE}`);
+    getPokemonList: build.infiniteQuery<PokemonSummary[], void, number>({
+      infiniteQueryOptions: {
+        initialPageParam: 0,
+        // A page shorter than PAGE_SIZE is the last one; stop paging there.
+        getNextPageParam: (lastPage, _allPages, lastPageParam) =>
+          lastPage.length < PAGE_SIZE ? undefined : lastPageParam + PAGE_SIZE,
+      },
+      async queryFn({pageParam}, _api, _extra, baseQuery) {
+        const page = await baseQuery(`pokemon?limit=${PAGE_SIZE}&offset=${pageParam}`);
         if (page.error) return {error: page.error};
         const results = (page.data as {results: {name: string; url: string}[]}).results;
         const details = await Promise.all(
@@ -53,4 +61,4 @@ const listApi = baseApi.injectEndpoints({
   }),
 });
 
-export const {useGetPokemonListQuery} = listApi;
+export const {useGetPokemonListInfiniteQuery} = listApi;

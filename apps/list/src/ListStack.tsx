@@ -10,7 +10,7 @@ import {
   ErrorState,
 } from '@pokedex/ui';
 import {shellNavigate} from '@pokedex/contracts';
-import {useGetPokemonListQuery} from './listApi';
+import {useGetPokemonListInfiniteQuery} from './listApi';
 
 // --- listApp's exposed navigation stack: the Pokédex grid, loaded into the host's tab via Module
 // Federation. It composes the shared @pokedex/ui design system (FlashList-backed PokemonGrid),
@@ -28,7 +28,16 @@ const MAX_PARTY = 6;
 
 function ListMainScreen() {
   const partyCount = useSelector((s: PartySliceShape) => s.party?.members.length ?? 0);
-  const {data, isLoading, isError, refetch} = useGetPokemonListQuery();
+  const {data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage} =
+    useGetPokemonListInfiniteQuery();
+  // RTK Query keeps each fetched page; flatten them into the single list FlashList renders.
+  const pokemon = data?.pages.flat() ?? [];
+
+  const onEndReached = () => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  };
 
   return (
     <ScreenContainer>
@@ -46,9 +55,11 @@ function ListMainScreen() {
           <ErrorState onRetry={refetch} />
         ) : (
           <PokemonGrid
-            data={data}
+            data={pokemon}
             numColumns={3}
             onPressItem={entry => shellNavigate('PokemonDetail', {id: entry.id})}
+            onEndReached={onEndReached}
+            isFetchingNextPage={isFetchingNextPage}
           />
         )}
       </Box>
