@@ -14,6 +14,14 @@ const battleResult = createAction<BattleResultPayload>(
   CROSS_MODULE_ACTIONS.party.battleResult,
 );
 
+// --- Cross-module add-to-party. detailApp and listApp dispatch these contract actions with the
+// full member; the host-owned slice adds it. Same decoupling as battleResult: the remotes never
+// import this slice, only the action-type strings from @pokedex/contracts. ---
+const addFromDetail = createAction<PartyMember>(
+  CROSS_MODULE_ACTIONS.detail.addToPartyFromDetail,
+);
+const addFromList = createAction<PartyMember>(CROSS_MODULE_ACTIONS.list.addToParty);
+
 // --- Host-owned, cross-cutting state: the player's party of up to 6 Pokémon. Lives in the
 // host store from boot (not injected by a remote) because three different remotes read or
 // write it: listApp shows an "in party" affordance, detailApp adds/removes, partyApp manages.
@@ -72,6 +80,12 @@ const partySlice = createSlice({
     builder.addCase(battleResult, (state, action) => {
       state.lastBattleWinnerId = action.payload.winnerId;
     });
+    const add = (state: PartyState, action: PayloadAction<PartyMember>) => {
+      if (state.members.length >= MAX_PARTY) return; // capped; graceful no-op
+      state.members.push(action.payload);
+    };
+    builder.addCase(addFromDetail, add);
+    builder.addCase(addFromList, add);
   },
   selectors: {
     selectParty: state => state.members,

@@ -5,44 +5,43 @@ import {
   ScreenContainer,
   PokemonGrid,
   Box,
+  Center,
   Text,
   Button,
   ButtonText,
   type PokemonGridEntry,
 } from '@pokedex/ui';
 import {shellNavigate, CROSS_MODULE_ACTIONS} from '@pokedex/contracts';
-import {artworkUri} from './pokeApi';
 
 // --- partyApp's exposed stack: the party manager. Dark-themed (ScreenContainer variant) to give
-// the tab a strong visual identity. Renders the FlashList-backed PokemonGrid at two columns, and
-// launches the native Quick Battle flow. That button is the full strategy loop in one tap: a
-// federated RN remote calls shell.navigateTo for a NATIVE destination, the native SwiftUI screen
-// runs and returns a winner, and the remote dispatches the result as a contract action into the
-// host-owned party slice (which then mirrors back to native via the store-observer bridge). ---
+// the tab a strong visual identity. It renders the host-owned party slice (members added from the
+// Detail screen via a cross-module action), proving cross-module state: a remote reads state that
+// another remote wrote, through the host store, with no direct coupling. The Quick Battle button
+// is the native loop: shell.navigateTo to a NATIVE destination, the SwiftUI screen returns a
+// winner, and the result is dispatched back as a contract action the host slice reduces. ---
 
 const Stack = createNativeStackNavigator();
 
-const DEMO_PARTY: PokemonGridEntry[] = [
-  {id: 3, name: 'Venusaur', types: ['grass', 'poison'], spriteUri: artworkUri(3)},
-  {id: 9, name: 'Blastoise', types: ['water'], spriteUri: artworkUri(9)},
-  {id: 6, name: 'Charizard', types: ['fire', 'flying'], spriteUri: artworkUri(6)},
-];
-
+interface PartyMember {
+  id: number;
+  name: string;
+  types: string[];
+  spriteUri?: string;
+}
 interface PartySliceShape {
-  party?: {lastBattleWinnerId: number | null};
+  party?: {members: PartyMember[]; lastBattleWinnerId: number | null};
 }
 
 function PartyMainScreen() {
   const dispatch = useDispatch();
-  const winnerId = useSelector(
-    (s: PartySliceShape) => s.party?.lastBattleWinnerId ?? null,
-  );
-  const winnerName = DEMO_PARTY.find(p => p.id === winnerId)?.name;
+  const members = useSelector((s: PartySliceShape) => s.party?.members ?? []);
+  const winnerId = useSelector((s: PartySliceShape) => s.party?.lastBattleWinnerId ?? null);
+  const winnerName = members.find(p => p.id === winnerId)?.name;
 
   const onQuickBattle = async () => {
     // RN -> Native: hand the native flow the current party as input.
     const result = await shellNavigate('QuickBattle', {
-      party: DEMO_PARTY.map(p => ({id: p.id, name: p.name})),
+      party: members.map(p => ({id: p.id, name: p.name})),
     });
     // Native -> RN: dispatch the returned winner as a contract action; the host party slice
     // owns the reducer, so partyApp stays decoupled from the host's slice file.
@@ -51,25 +50,39 @@ function PartyMainScreen() {
     }
   };
 
+  const data: PokemonGridEntry[] = members.map(m => ({
+    id: m.id,
+    name: m.name,
+    types: m.types,
+    spriteUri: m.spriteUri,
+  }));
+
   return (
     <ScreenContainer variant="dark">
       <Box className="p-3">
-        <Button onPress={onQuickBattle} size="lg" className="bg-type-electric">
+        <Button onPress={onQuickBattle} size="lg" className="bg-type-electric" isDisabled={members.length === 0}>
           <ButtonText className="text-black">Quick Battle</ButtonText>
         </Button>
         {winnerName ? (
-          <Text className="text-white mt-3 text-center">
-            Last battle winner: {winnerName}
-          </Text>
+          <Text className="text-white mt-3 text-center">Last battle winner: {winnerName}</Text>
         ) : null}
       </Box>
-      <Box className="flex-1">
-        <PokemonGrid
-          data={DEMO_PARTY}
-          numColumns={2}
-          onPressItem={entry => shellNavigate('PokemonDetail', {id: entry.id})}
-        />
-      </Box>
+      {members.length === 0 ? (
+        <Center className="flex-1 px-8">
+          <Text className="text-white text-center text-lg">Your party is empty</Text>
+          <Text className="text-midGrey text-center mt-2">
+            Open a Pokémon from the Pokédex and tap Add to Party.
+          </Text>
+        </Center>
+      ) : (
+        <Box className="flex-1">
+          <PokemonGrid
+            data={data}
+            numColumns={2}
+            onPressItem={entry => shellNavigate('PokemonDetail', {id: entry.id})}
+          />
+        </Box>
+      )}
     </ScreenContainer>
   );
 }
