@@ -9,6 +9,7 @@ import {registerShellNavigateHandler} from '@pokedex/contracts';
 import {store, persistor} from './src/shell/store';
 import {AppNavigator} from './src/shell/AppNavigator';
 import {initializeFederation} from './src/shell/scriptManager';
+import {FederationBanner} from './src/shell/FederationBanner';
 import {navigationRef, shellNavigateHandler} from './src/shell/shellNavigation';
 
 // --- Wire the shell.navigateTo bridge once at module load, before any remote can call it.
@@ -33,9 +34,12 @@ export default function App() {
         <GluestackUIProvider mode="light">
           <SafeAreaProvider>
             {ready ? (
-              <NavigationContainer ref={navigationRef}>
-                <AppNavigator />
-              </NavigationContainer>
+              <>
+                <NavigationContainer ref={navigationRef}>
+                  <AppNavigator />
+                </NavigationContainer>
+                <FederationBanner />
+              </>
             ) : (
               <View style={{flex: 1, justifyContent: 'center'}}>
                 <ActivityIndicator />
