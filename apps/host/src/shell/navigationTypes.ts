@@ -14,5 +14,7 @@ export type RootStackParamList = {
   // The bottom tabs live nested under this root-stack screen; NavigatorScreenParams lets the
   // shell navigate to a specific tab via navigate('Tabs', {screen: 'PartyTab'}).
   Tabs: NavigatorScreenParams<RootTabParamList>;
-  PokemonDetail: {id: number};
+  // uid is present only when opened from the party tab (the party slot's uid). The detail screen
+  // uses its presence to show an "in party" indicator instead of Add to Party.
+  PokemonDetail: {id: number; uid?: number};
 };

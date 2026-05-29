@@ -43,8 +43,12 @@ export const shellNavigateHandler: ShellNavigateFn = async (destination, params)
   if ('tab' in entry) {
     navigationRef.navigate('Tabs', {screen: entry.tab});
   } else {
+    // Forward uid as well as id: the party tab passes the slot uid so the detail screen knows the
+    // Pokémon is already a member (it shows an in-party indicator rather than Add to Party).
+    const p = params as {id?: unknown; uid?: unknown} | undefined;
     navigationRef.navigate('PokemonDetail', {
-      id: Number((params as {id?: unknown} | undefined)?.id ?? 0),
+      id: Number(p?.id ?? 0),
+      uid: typeof p?.uid === 'number' ? p.uid : undefined,
     });
   }
   return undefined;

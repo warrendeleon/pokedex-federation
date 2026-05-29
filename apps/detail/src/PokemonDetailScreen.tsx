@@ -4,7 +4,7 @@
 // not also present in host-scanned host / @pokedex/ui source) never register and silently no-op.
 // Importing it from the exposed module guarantees it loads whenever the screen does. ---
 import '../global.css';
-import React from 'react';
+import React, {useEffect, useState} from 'react';
 import {ScrollView} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {
@@ -22,11 +22,7 @@ import {
   ScreenContainer,
   StatBar,
   Text,
-  Toast,
-  ToastDescription,
-  ToastTitle,
   TypeBadge,
-  useToast,
   VStack,
 } from '@pokedex/ui';
 import {CROSS_MODULE_ACTIONS} from '@pokedex/contracts';
@@ -70,9 +66,19 @@ export function PokemonDetailScreen({route}: Props) {
   const fromParty = route?.params?.uid != null;
   const {data, isLoading, isError, refetch} = useGetPokemonDetailQuery(id);
   const dispatch = useDispatch();
-  const toast = useToast();
   const partyCount = useSelector((s: PartySliceShape) => s.party?.members.length ?? 0);
   const isFull = partyCount >= MAX_PARTY;
+
+  // Add-to-party confirmation. A global Gluestack toast renders in a root portal that sits BEHIND
+  // this screen (it's presented as a native-stack modal, a separate view controller), so it would
+  // never be seen. Adding only happens here, so the confirmation lives in this screen's own tree,
+  // above everything, and auto-dismisses.
+  const [justAdded, setJustAdded] = useState(false);
+  useEffect(() => {
+    if (!justAdded) return;
+    const t = setTimeout(() => setJustAdded(false), 2000);
+    return () => clearTimeout(t);
+  }, [justAdded]);
 
   if (isLoading) {
     return (
@@ -95,19 +101,7 @@ export function PokemonDetailScreen({route}: Props) {
       type: CROSS_MODULE_ACTIONS.detail.addToPartyFromDetail,
       payload: {id: data.id, name: data.name, types: data.types, spriteUri: data.spriteUri},
     });
-    // Confirm the cross-module write with a toast. useToast resolves the host's ToastProvider
-    // (mounted in GluestackUIProvider) through the shared @pokedex/ui singleton, so this renders
-    // even though it's fired from the detail remote.
-    toast.show({
-      placement: 'top',
-      duration: 2000,
-      render: ({id: toastId}) => (
-        <Toast nativeID={`toast-${toastId}`} action="success" variant="solid">
-          <ToastTitle>Added to party</ToastTitle>
-          <ToastDescription>{data.name} joined your party.</ToastDescription>
-        </Toast>
-      ),
-    });
+    setJustAdded(true);
   };
 
   return (
@@ -188,6 +182,18 @@ export function PokemonDetailScreen({route}: Props) {
           </VStack>
         </VStack>
       </ScrollView>
+
+      {justAdded ? (
+        // Sibling after the ScrollView so it paints on top; absolute so it overlays rather than
+        // shifting the layout. Auto-dismisses via the justAdded timer.
+        <Box className="absolute top-0 left-0 right-0 items-center pt-3 px-4">
+          <Box className="bg-pokemonGreen rounded-2xl px-5 py-3">
+            <Text bold className="text-black">
+              ✓ {data.name} added to your party
+            </Text>
+          </Box>
+        </Box>
+      ) : null}
     </ScreenContainer>
   );
 }
