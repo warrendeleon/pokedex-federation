@@ -66,19 +66,29 @@ const initialState: PartyState = {
   lastBattleWinnerId: null,
 };
 
+// --- Shared mutations, used by both the local reducers and the cross-module extraReducers so the
+// cap + uid-assignment rule lives in exactly one place. (Immer drafts, so direct mutation.) ---
+function addMember(state: PartyState, member: IncomingPartyMember): void {
+  // Party is capped; adding at capacity is a graceful no-op. Duplicates are allowed (two Pikachus
+  // is fine) per the brief; each gets its own uid.
+  if (state.members.length >= MAX_PARTY) return;
+  state.members.push({uid: state.nextUid++, ...member});
+}
+
+function removeMemberByUid(state: PartyState, uid: number): void {
+  // Remove by uid, not index/id: duplicates share an id, and indices shift as the list changes.
+  state.members = state.members.filter(m => m.uid !== uid);
+}
+
 const partySlice = createSlice({
   name: 'party',
   initialState,
   reducers: {
     addToParty(state, action: PayloadAction<IncomingPartyMember>) {
-      // --- Party is capped; adding at capacity is a graceful no-op, never a crash.
-      // Duplicates are allowed (two Pikachus is fine) per the brief; each gets its own uid. ---
-      if (state.members.length >= MAX_PARTY) return;
-      state.members.push({uid: state.nextUid++, ...action.payload});
+      addMember(state, action.payload);
     },
     removeFromParty(state, action: PayloadAction<{uid: number}>) {
-      // Remove by uid, not index/id: duplicates share an id, and indices shift as the list changes.
-      state.members = state.members.filter(m => m.uid !== action.payload.uid);
+      removeMemberByUid(state, action.payload.uid);
     },
     clearParty(state) {
       state.members = [];
@@ -95,16 +105,12 @@ const partySlice = createSlice({
     builder.addCase(battleResult, (state, action) => {
       state.lastBattleWinnerId = action.payload.winnerId;
     });
-    const add = (state: PartyState, action: PayloadAction<IncomingPartyMember>) => {
-      if (state.members.length >= MAX_PARTY) return; // capped; graceful no-op
-      state.members.push({uid: state.nextUid++, ...action.payload});
-    };
+    const add = (state: PartyState, action: PayloadAction<IncomingPartyMember>) =>
+      addMember(state, action.payload);
     builder.addCase(addFromDetail, add);
     builder.addCase(addFromList, add);
     // --- Cross-module remove: partyApp dispatches CROSS_MODULE_ACTIONS.party.remove with a uid. ---
-    builder.addCase(removeByUid, (state, action) => {
-      state.members = state.members.filter(m => m.uid !== action.payload.uid);
-    });
+    builder.addCase(removeByUid, (state, action) => removeMemberByUid(state, action.payload.uid));
   },
   selectors: {
     selectParty: state => state.members,

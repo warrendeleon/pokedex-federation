@@ -5,7 +5,8 @@
 
 export const CROSS_MODULE_ACTIONS = {
   list: {
-    /** User added a Pokémon to the party from the List screen. payload: {id: number} */
+    /** User added a Pokémon to the party from the List screen.
+     *  payload: {id, name, types, spriteUri} (the full member; the host slice assigns the uid). */
     addToParty: 'list/addToParty',
   },
   party: {
@@ -17,7 +18,7 @@ export const CROSS_MODULE_ACTIONS = {
   },
   detail: {
     /** User added the currently-viewed Pokémon to the party from the Detail screen.
-     *  payload: {id: number} */
+     *  payload: {id, name, types, spriteUri} (the full member; the host slice assigns the uid). */
     addToPartyFromDetail: 'detail/addToParty',
   },
 } as const;
