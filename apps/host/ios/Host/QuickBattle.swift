@@ -129,62 +129,81 @@ private struct QuickBattleView: View {
   @State private var ko = false
 
   var body: some View {
-    VStack(spacing: 20) {
-      Text("Quick Battle").font(.largeTitle).bold()
-      Text("Native screen · store observer sees \(observedPartySize) in your party")
-        .font(.footnote)
-        .foregroundColor(.secondary)
-        .multilineTextAlignment(.center)
-
-      if contestants.isEmpty {
-        Spacer()
-        Text("Your party is empty.\nAdd some Pokémon, then battle.")
-          .multilineTextAlignment(.center)
+    // NavigationStack so the battle can push a second NATIVE screen (the result) in native land.
+    NavigationStack {
+      VStack(spacing: 20) {
+        Text("Native screen · store observer sees \(observedPartySize) in your party")
+          .font(.footnote)
           .foregroundColor(.secondary)
-        Spacer()
-      } else {
-        VStack(spacing: 10) {
-          ForEach(contestants) { c in
-            HStack {
-              Text(c.name).font(.title3)
-              Spacer()
-              if winnerId == c.id { Text("🏆") }
+          .multilineTextAlignment(.center)
+
+        if contestants.isEmpty {
+          Spacer()
+          Text("Your party is empty.\nAdd some Pokémon, then battle.")
+            .multilineTextAlignment(.center)
+            .foregroundColor(.secondary)
+          Spacer()
+        } else {
+          VStack(spacing: 10) {
+            ForEach(contestants) { c in
+              HStack {
+                Text(c.name).font(.title3)
+                Spacer()
+                if winnerId == c.id { Text("🏆") }
+              }
             }
           }
-        }
-        .padding(.vertical, 8)
+          .padding(.vertical, 8)
 
-        if let id = winnerId, let w = contestants.first(where: { $0.id == id }) {
-          Text("\(w.name) wins\(ko ? " by KO!" : "!")").font(.title2).bold()
-        }
-
-        Button(winnerId == nil ? "Battle!" : "Battle again") {
-          let pick = contestants.randomElement()
-          winnerId = pick?.id
-          ko = (pick?.id ?? 0) % 2 == 0
-        }
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
-
-        // Native -> RN: a native screen opening an RN screen. Once there's a winner, this asks the
-        // shell router to push the RN PokemonDetail for it, then dismisses the native flow so the
-        // RN screen it pushed underneath is revealed. Native chose an RN destination; it never
-        // touched React Navigation directly.
-        if let id = winnerId, let w = contestants.first(where: { $0.id == id }) {
-          Button("View \(w.name) in Pokédex") {
-            ShellEventBridge.shared.requestNavigate(
-              destination: "PokemonDetail",
-              paramsJson: "{\"id\": \(id)}"
-            )
-            finish()
+          if let id = winnerId, let w = contestants.first(where: { $0.id == id }) {
+            Text("\(w.name) wins\(ko ? " by KO!" : "!")").font(.title2).bold()
           }
-          .controlSize(.large)
-        }
-      }
 
-      Button("Done", action: finish).padding(.top, 8)
+          Button(winnerId == nil ? "Battle!" : "Battle again") {
+            let pick = contestants.randomElement()
+            winnerId = pick?.id
+            ko = (pick?.id ?? 0) % 2 == 0
+          }
+          .buttonStyle(.borderedProminent)
+          .controlSize(.large)
+
+          if let id = winnerId, let w = contestants.first(where: { $0.id == id }) {
+            // Native -> Native: push a second fully-native screen via SwiftUI NavigationStack. No
+            // React renders here and the shell isn't involved; this is a native flow moving between
+            // two native screens, with the system back button to return.
+            NavigationLink {
+              BattleResultView(
+                winnerName: w.name,
+                leftName: contestants.first?.name ?? w.name,
+                rightName: contestants.last?.name ?? w.name,
+                ko: ko,
+                onDone: finish
+              )
+            } label: {
+              Text("See full result")
+            }
+            .controlSize(.large)
+
+            // Native -> RN: ask the shell router to open the RN detail for the winner, then dismiss
+            // this flow so the RN screen it pushed underneath is revealed. Native chose an RN
+            // destination without touching React Navigation directly.
+            Button("View \(w.name) in Pokédex") {
+              ShellEventBridge.shared.requestNavigate(
+                destination: "PokemonDetail",
+                paramsJson: "{\"id\": \(id)}"
+              )
+              finish()
+            }
+            .controlSize(.large)
+          }
+        }
+
+        Button("Done", action: finish).padding(.top, 8)
+      }
+      .padding(32)
+      .navigationTitle("Quick Battle")
+      .navigationBarTitleDisplayMode(.inline)
     }
-    .padding(32)
   }
 
   private func finish() {
@@ -204,5 +223,39 @@ private struct QuickBattleView: View {
     let json = (try? JSONSerialization.data(withJSONObject: payload))
       .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
     onDone(json)
+  }
+}
+
+// MARK: - Second native screen (Native -> Native)
+
+/// The battle result, pushed onto the QuickBattle NavigationStack. A fully native screen reached
+/// from another native screen, with the system back button to return; React Navigation and the
+/// shell play no part. Its Done finishes the whole native flow (dismiss + resolve openNative).
+private struct BattleResultView: View {
+  let winnerName: String
+  let leftName: String
+  let rightName: String
+  let ko: Bool
+  let onDone: () -> Void
+
+  var body: some View {
+    VStack(spacing: 16) {
+      Text("\(leftName)  vs  \(rightName)")
+        .font(.headline)
+        .foregroundColor(.secondary)
+
+      Text("🏆").font(.system(size: 64))
+      Text(winnerName).font(.largeTitle).bold()
+      Text(ko ? "Winner by KO!" : "Winner!").font(.title3).foregroundColor(.secondary)
+
+      Spacer()
+
+      Button("Done", action: onDone)
+        .buttonStyle(.borderedProminent)
+        .controlSize(.large)
+    }
+    .padding(32)
+    .navigationTitle("Result")
+    .navigationBarTitleDisplayMode(.inline)
   }
 }
