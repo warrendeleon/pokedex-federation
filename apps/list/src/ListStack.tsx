@@ -1,3 +1,8 @@
+// Load this remote's compiled Tailwind into the shared cssInterop registry. The build entry
+// (src/index.js) imports it too, but that entry is not in the graph the host pulls when it
+// federates this exposed stack, so without this import the remote's own classNames would silently
+// no-op on the host-provided Gluestack singletons (same fix as detail/regions).
+import '../global.css';
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
