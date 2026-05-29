@@ -1,24 +1,38 @@
-import {ScriptManager} from '@callstack/repack/client';
-import {Platform} from 'react-native';
-import {registerRemotes} from '@module-federation/runtime';
+import {ScriptManager, Script} from '@callstack/repack/client';
+import {NativeModules, Platform} from 'react-native';
+import {registerPlugins, registerRemotes} from '@module-federation/runtime';
+import type {ModuleFederationRuntimePlugin} from '@module-federation/runtime';
 import {mmkvStorage} from './storage';
+import {BUNDLED_VERSIONS, EMBEDDED_MANIFESTS} from './embedded-manifests';
 
-// --- The federation's operational layer: how remotes are located and version-resolved per
-// launch, and how the app degrades when the CDN is unreachable.
+// --- The federation's operational layer: how remotes are located + version-resolved per launch,
+// and how the app degrades when the CDN is unreachable.
 //
-//   DEV      -> Re.Pack's dev servers (8082-8085). Built-in resolution, nothing to configure.
+//   DEV      -> Re.Pack's dev servers (8082-8085). Built-in resolution; this resolver no-ops.
 //   CDN      -> RELEASE builds probe a version-map at boot and load each remote's pinned version
-//               from the CDN. Shipping a remote = upload + one line in the version-map; no host
-//               rebuild, no app-store round trip.
-//   BUNDLED  -> if the version-map probe fails (offline, CDN down, first launch), fall back to the
-//               prod bundles embedded in the app and resolved off the filesystem. The app always
-//               boots from a known-good set.
+//               from the CDN. Ship a remote = upload + one version-map line; no host rebuild.
+//   BUNDLED  -> if the probe fails (offline / CDN down / first launch), boot the prod bundles the
+//               embed build phase baked into the app, loaded from disk. Always a known-good set.
 //
-// The mode + resolved versions are exposed via getFederationStatus for the on-screen banner. ---
+// Mode + resolved versions are exposed via getFederationStatus for the on-screen banner. ---
 
-// --- Persistent script cache: PROD only. In PROD a fetched container survives restarts so the
-// app boots offline from the last-known-good bundle; in DEV it would mask remote edits (the dev
-// server is the single source of truth, fetched fresh each launch). ---
+// --- The .app's directory, derived from RN's SourceCode module. In a release build scriptURL is
+// file:///.../Host.app/main.jsbundle; strip the scheme + filename to get the .app dir, then build
+// ABSOLUTE file:// URLs for the embedded remote bundles. Absolute (not NSBundle URLForResource)
+// is required: URLForResource treats the ".bundle" suffix as a resource-bundle directory and
+// silently misses flat files, which is what makes a bundled chunk load deliver nothing. ---
+const SCRIPT_URL: string | undefined =
+  NativeModules?.SourceCode?.scriptURL ||
+  (
+    NativeModules?.SourceCode as {getConstants?: () => {scriptURL?: string}} | undefined
+  )?.getConstants?.()?.scriptURL;
+const APP_PATH =
+  SCRIPT_URL && SCRIPT_URL.startsWith('file://')
+    ? SCRIPT_URL.replace(/^file:\/\//, '').replace(/\/[^/]+\.jsbundle$/, '')
+    : undefined;
+
+// --- Persistent script cache: PROD only. In PROD a fetched container survives restarts; in DEV
+// it would mask remote edits (the dev server is the single source of truth each launch). ---
 if (!__DEV__) {
   ScriptManager.shared.setStorage(mmkvStorage);
 }
@@ -28,6 +42,7 @@ const REMOTE_NAMES = ['listApp', 'partyApp', 'regionsApp', 'detailApp'] as const
 declare const __MF_CDN_BASE__: string;
 const PROD_CDN_BASE =
   typeof __MF_CDN_BASE__ === 'string' ? __MF_CDN_BASE__ : 'https://cdn.example.com/mf';
+const PROBE_TIMEOUT_MS = 1500;
 
 export type FederationMode = 'dev' | 'cdn' | 'bundled';
 
@@ -46,13 +61,73 @@ function cdnManifestUrl(name: string, version: string): string {
   return `${PROD_CDN_BASE}/${Platform.OS}/${name}/${version}/mf-manifest.json`;
 }
 
-// --- Boot-time version-map probe. Returns the remote -> version map the CDN is currently
-// serving, or null if it can't be reached (which trips the bundled fallback). ---
+// --- MF runtime plugin: in bundled mode, intercept the manifest fetch and return the embedded
+// JSON. The MF runtime asks for each remote's mf-manifest.json to learn its shared-dependency
+// config; RN's fetch can't read file://, so we serve it from EMBEDDED_MANIFESTS. Matched by remote
+// name so it works regardless of the version segment in the host bundle's baked-in URL. ---
+const bundledFallbackPlugin: ModuleFederationRuntimePlugin = {
+  name: 'pokedex-bundled-fallback',
+  fetch(url: string) {
+    if (status.mode !== 'bundled') return undefined;
+    const remote = REMOTE_NAMES.find(
+      n => url.includes(`/${n}/`) && url.endsWith('/mf-manifest.json'),
+    );
+    if (!remote) return undefined;
+    const manifest = EMBEDDED_MANIFESTS[Platform.OS]?.[remote];
+    if (!manifest) {
+      console.warn(`[mf-fallback] no embedded manifest for ${Platform.OS}/${remote}`);
+      return undefined;
+    }
+    return Promise.resolve(
+      new Response(JSON.stringify(manifest), {
+        status: 200,
+        headers: {'Content-Type': 'application/json'},
+      }),
+    );
+  },
+};
+registerPlugins([bundledFallbackPlugin]);
+
+// --- ScriptManager resolver, active in bundled mode only (dev + cdn return undefined and let
+// Re.Pack's built-in / per-remote resolvers handle loading). Priority 100 so it runs before
+// Re.Pack's auto-added per-remote resolver. Builds an ABSOLUTE file:// URL into the .app's
+// cdn/<platform>/<remote>/<version>/ tree (preserved by the embed build phase) for the remote's
+// container and each chunk; absolute:true makes the native loader read the path directly. ---
+ScriptManager.shared.addResolver(
+  async (scriptId, caller) => {
+    if (status.mode !== 'bundled' || !APP_PATH) return undefined;
+    const remoteName = REMOTE_NAMES.includes(scriptId as (typeof REMOTE_NAMES)[number])
+      ? scriptId
+      : caller && REMOTE_NAMES.includes(caller as (typeof REMOTE_NAMES)[number])
+      ? caller
+      : undefined;
+    if (!remoteName) return undefined;
+    const version = BUNDLED_VERSIONS[Platform.OS]?.[remoteName];
+    if (!version) return undefined;
+    const filename =
+      scriptId === remoteName
+        ? `${remoteName}.container.js.bundle`
+        : `${scriptId}.chunk.bundle`;
+    return {
+      url: `file://${APP_PATH}/cdn/${Platform.OS}/${remoteName}/${version}/${filename}`,
+      cache: true,
+      absolute: true,
+    };
+  },
+  {key: '__bundled_fs__', priority: 100},
+);
+
+// --- Boot-time version-map probe. Doubles as the CDN reachability check: a 200 with valid JSON
+// means CDN is up and gives the per-remote versions for this launch. Failure -> bundled mode. ---
 async function fetchVersionMap(): Promise<Record<string, string> | null> {
   try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
     const res = await fetch(`${PROD_CDN_BASE}/${Platform.OS}/version-map.json`, {
+      signal: controller.signal,
       headers: {'cache-control': 'no-cache'},
     });
+    clearTimeout(timer);
     if (!res.ok) return null;
     return (await res.json()) as Record<string, string>;
   } catch {
@@ -67,96 +142,9 @@ function registerCdnRemotes(versions: Record<string, string>): void {
   );
 }
 
-// --- Bundled (offline) fallback (PARTIAL; CDN is the verified production path). The embed build
-// phase copies each remote's prod container + chunks into the app's Resources, and
-// tools/build-cdn.mjs embeds the remotes' manifests into the JS bundle. Two pieces are wired: ---
-//
-// STATUS: the container loads from the bundle and, with the embedded manifest, MF reads each
-// remote's shared-dependency config so shared deps (react, react-native, nativewind, ...) resolve
-// from the host's singletons. STILL BROKEN: a remote's NON-shared code-split chunk
-// (nativewind/jsx-runtime) loads from file:// but fails webpack chunk-registration offline (the
-// same chunk registers fine over HTTP), so a bundled launch still crashes with ChunkLoadError.
-// Closing this needs eager-sharing the JSX runtime, or building remotes without code-splitting
-// (which breaks singleton sharing), or a Re.Pack offline chunk-registration fix; none of these
-// landed without risking the CDN/dev paths. Do NOT run a Release build offline until resolved. ---
-
-// 1. A high-priority resolver maps every remote script (container + chunks) to its embedded
-//    file:// copy by filename. The remote's runtime computes chunk URLs from publicPath "noop:///"
-//    (a Re.Pack sentinel that forces ScriptManager resolution), so referenceUrl is noop:///<file>
-//    and we rewrite it to file:///<file>; the native loader serves it from the app bundle.
-let bundledResolverAdded = false;
-function addBundledResolver(): void {
-  if (bundledResolverAdded) return;
-  bundledResolverAdded = true;
-  ScriptManager.shared.addResolver(
-    async (scriptId, _caller, referenceUrl) => {
-      let filename: string | undefined;
-      if (referenceUrl) {
-        filename = referenceUrl.split('?')[0].split('/').pop() || undefined;
-      } else if (REMOTE_NAMES.includes(scriptId as (typeof REMOTE_NAMES)[number])) {
-        filename = `${scriptId}.container.js.bundle`;
-      }
-      if (!filename) return undefined;
-      return {url: `file:///${filename}`, cache: false};
-    },
-    {key: '__bundled_fs__', priority: 100},
-  );
-}
-
-// 2. The MF runtime fetches each remote's mf-manifest.json to learn its shared-dependency config.
-//    RN's fetch can't read file://, so we serve the manifests (embedded in the JS bundle by
-//    tools/build-cdn.mjs) from a sentinel scheme via a scoped fetch patch. With the manifest, MF
-//    knows the remote shares nativewind/react/... and resolves them from the host's singletons
-//    instead of loading the remote's own copies (which previously failed chunk-registration
-//    offline). Everything that isn't a sentinel manifest URL passes through untouched.
-const EMBEDDED_MANIFEST_PREFIX = 'embedded-manifest:///';
-let embeddedFetchInstalled = false;
-function installEmbeddedManifestFetch(): void {
-  if (embeddedFetchInstalled) return;
-  embeddedFetchInstalled = true;
-  const original = globalThis.fetch;
-  globalThis.fetch = function patchedFetch(input: RequestInfo, init?: RequestInit) {
-    const url = typeof input === 'string' ? input : input.url;
-    if (url.startsWith(EMBEDDED_MANIFEST_PREFIX)) {
-      const name = url.slice(EMBEDDED_MANIFEST_PREFIX.length).split('/')[0];
-      const manifest = (embeddedManifests as Record<string, unknown>)[name];
-      if (manifest) {
-        return Promise.resolve(
-          new Response(JSON.stringify(manifest), {
-            status: 200,
-            headers: {'Content-Type': 'application/json'},
-          }),
-        );
-      }
-    }
-    return original.call(globalThis, input, init);
-  } as typeof fetch;
-}
-
-function registerBundledRemotes(_versions: Record<string, string>): void {
-  installEmbeddedManifestFetch();
-  addBundledResolver();
-  // Manifest entries (served offline by the fetch patch above) so MF gets the shared config; the
-  // resolver then maps the container + chunks to their embedded files.
-  registerRemotes(
-    REMOTE_NAMES.map(name => ({
-      name,
-      entry: `${EMBEDDED_MANIFEST_PREFIX}${name}/mf-manifest.json`,
-    })),
-    {force: true},
-  );
-}
-
-// --- The version-map shipped inside the app alongside the embedded bundles. The embed phase
-// writes the real values; this default keeps a release build honest if the phase is skipped. ---
-import embeddedVersionMap from './embeddedVersionMap.json';
-// Remote manifests embedded by tools/build-cdn.mjs; served to the MF runtime offline (see the
-// fetch patch above) so it gets each remote's shared-dependency config without a network call.
-import embeddedManifests from './embeddedManifests.json';
-
 // --- Awaited by the federation gate in App.tsx before the navigator (and its React.lazy
-// federated tabs) mounts, so the resolver + remote registrations are in place before the MF
-// runtime fires its first request. ---
+// federated tabs) mounts, so the resolver/plugin + remote registrations are in place before the
+// MF runtime fires its first request. ---
 export async function initializeFederation(): Promise<{mode: FederationMode}> {
   if (initialized) return {mode: status.mode};
   initialized = true;
@@ -171,8 +159,14 @@ export async function initializeFederation(): Promise<{mode: FederationMode}> {
     registerCdnRemotes(cdnVersions);
     status = {mode: 'cdn', source: PROD_CDN_BASE, versions: cdnVersions};
   } else {
-    registerBundledRemotes(embeddedVersionMap);
-    status = {mode: 'bundled', source: 'embedded (offline)', versions: embeddedVersionMap};
+    // Bundled: leave the build-time remote registrations in place; the plugin serves their
+    // manifests from EMBEDDED_MANIFESTS and the resolver maps container + chunks to the embedded
+    // files. No re-registration needed.
+    status = {
+      mode: 'bundled',
+      source: 'embedded (offline)',
+      versions: BUNDLED_VERSIONS[Platform.OS] ?? {},
+    };
   }
   return {mode: status.mode};
 }
@@ -182,21 +176,17 @@ export function getFederationStatus(): FederationStatus {
 }
 
 // --- Retry handler for FederatedTabBoundary. Forces every layer that caches remote state to
-// forget the previous (failed) load: the MF runtime's remote entry, the container global, and
-// the ScriptManager script cache. ---
+// forget the previous (failed) load: the MF runtime entry, the container global, the script
+// cache. DEV + bundled don't re-register (Re.Pack's resolution / the bundled resolver own the
+// entry); CDN re-registers the resolved versioned URL. ---
 export async function forceReloadRemote(remoteName: string): Promise<void> {
   if (!REMOTE_NAMES.includes(remoteName as (typeof REMOTE_NAMES)[number])) return;
-  // In DEV the remote entry comes from rspack's `remotes` (dev-server URLs) and Re.Pack's
-  // built-in resolution owns it; re-registering a CDN URL would break the retry. Just clear the
-  // caches below and let the dev server reload. CDN/bundled re-register their resolved entry.
-  if (status.mode !== 'dev') {
-    const version = status.versions[remoteName];
-    const entry =
-      status.mode === 'bundled'
-        ? `${remoteName}/${version ?? '0.0.0'}/mf-manifest.json`
-        : cdnManifestUrl(remoteName, version ?? 'latest');
+  if (status.mode === 'cdn') {
+    const version = status.versions[remoteName] ?? 'latest';
     try {
-      registerRemotes([{name: remoteName, entry}], {force: true});
+      registerRemotes([{name: remoteName, entry: cdnManifestUrl(remoteName, version)}], {
+        force: true,
+      });
     } catch (e) {
       console.warn(`[forceReloadRemote] registerRemotes failed for ${remoteName}:`, e);
     }

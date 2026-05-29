@@ -231,7 +231,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Bake the prod remote bundles (built by tools/build-cdn.mjs into cdn-root) into the app's\n# Resources so the federation can boot offline via Script.getFileSystemURL when the CDN is\n# unreachable. Flat copy: the native filesystem loader resolves scripts by resource name.\nset -e\nSRC=\"${SRCROOT}/../../../cdn-root/ios\"\nDEST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}\"\nif [ ! -d \"$SRC\" ]; then\n  echo \"warning: cdn-root not found at $SRC; run 'node tools/build-cdn.mjs' before a release build\"\n  exit 0\nfi\ncount=0\nfind \"$SRC\" -name '*.bundle' ! -name '*.map' -print0 | while IFS= read -r -d '' f; do\n  cp -f \"$f\" \"$DEST/\"\ndone\ncount=$(find \"$SRC\" -name '*.bundle' ! -name '*.map' | wc -l | tr -d ' ')\necho \"embedded $count federated remote bundles into $DEST\"\n";
+			shellScript = "# Copy prod remote bundles into the app, preserving cdn/<remote>/<version>/ structure.\n\"$SRCROOT/../scripts/embed-remotes-ios.sh\"\n";
 		};
 		C38B50BA6285516D6DCD4F65 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
