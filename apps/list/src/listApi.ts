@@ -35,7 +35,8 @@ const listApi = baseApi.injectEndpoints({
       async queryFn({pageParam}, _api, _extra, baseQuery) {
         const page = await baseQuery(`pokemon?limit=${PAGE_SIZE}&offset=${pageParam}`);
         if (page.error) return {error: page.error};
-        const results = (page.data as {results: {name: string; url: string}[]}).results;
+        // Guard the shape: a malformed 200 (missing results) shouldn't throw inside the queryFn.
+        const results = (page.data as {results?: {name: string; url: string}[]}).results ?? [];
         const details = await Promise.all(
           results.map(r => baseQuery(`pokemon/${idFromResourceUrl(r.url)}`)),
         );
@@ -45,12 +46,12 @@ const listApi = baseApi.injectEndpoints({
           const p = detail.data as {
             id: number;
             name: string;
-            types: {type: {name: string}}[];
+            types?: {type: {name: string}}[];
           };
           data.push({
             id: p.id,
             name: formatName(p.name),
-            types: p.types.map(t => t.type.name),
+            types: (p.types ?? []).map(t => t.type.name),
             spriteUri: artworkUri(p.id),
           });
         }

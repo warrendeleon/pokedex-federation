@@ -47,7 +47,7 @@ const regionsApi = baseApi.injectEndpoints({
       async queryFn(_arg, _api, _extra, baseQuery) {
         const index = await baseQuery('region');
         if (index.error) return {error: index.error};
-        const results = (index.data as {results: {name: string; url: string}[]}).results;
+        const results = (index.data as {results?: {name: string; url: string}[]}).results ?? [];
         const details = await Promise.all(results.map(r => baseQuery(`region/${r.name}`)));
         const data: RegionSummary[] = [];
         for (let i = 0; i < details.length; i++) {
@@ -71,7 +71,7 @@ const regionsApi = baseApi.injectEndpoints({
       async queryFn(regionName, _api, _extra, baseQuery) {
         const region = await baseQuery(`region/${regionName}`);
         if (region.error) return {error: region.error};
-        const pokedexes = (region.data as {pokedexes: {name: string}[]}).pokedexes;
+        const pokedexes = (region.data as {pokedexes?: {name: string}[]}).pokedexes ?? [];
         if (pokedexes.length === 0) return {data: []};
         // A region can carry several pokédexes (e.g. Kanto has "kanto", "letsgo-kanto"); prefer
         // the one named after the region, else the first listed.
@@ -79,11 +79,15 @@ const regionsApi = baseApi.injectEndpoints({
           pokedexes.find(p => p.name === regionName)?.name ?? pokedexes[0].name;
         const dex = await baseQuery(`pokedex/${dexName}`);
         if (dex.error) return {error: dex.error};
-        const entries = (
-          dex.data as {
-            pokemon_entries: {entry_number: number; pokemon_species: {name: string; url: string}}[];
-          }
-        ).pokemon_entries;
+        const entries =
+          (
+            dex.data as {
+              pokemon_entries?: {
+                entry_number: number;
+                pokemon_species: {name: string; url: string};
+              }[];
+            }
+          ).pokemon_entries ?? [];
         const data: RegionDexEntry[] = entries.map(e => ({
           id: idFromResourceUrl(e.pokemon_species.url),
           entryNumber: e.entry_number,
