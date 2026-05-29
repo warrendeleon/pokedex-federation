@@ -125,6 +125,7 @@
 				00DD1BFF1BD5951E006B06BC /* Bundle React Native code and images */,
 				00EEFC60759A1932668264C0 /* [CP] Embed Pods Frameworks */,
 				E235C05ADACE081382539298 /* [CP] Copy Pods Resources */,
+				13DCE22A2B6EC362C867A968 /* Embed Federated Remotes (offline fallback) */,
 			);
 			buildRules = (
 			);
@@ -212,6 +213,25 @@
 			shellPath = /bin/sh;
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Host/Pods-Host-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
+		};
+		13DCE22A2B6EC362C867A968 /* Embed Federated Remotes (offline fallback) */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Embed Federated Remotes (offline fallback)";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Bake the prod remote bundles (built by tools/build-cdn.mjs into cdn-root) into the app's\n# Resources so the federation can boot offline via Script.getFileSystemURL when the CDN is\n# unreachable. Flat copy: the native filesystem loader resolves scripts by resource name.\nset -e\nSRC=\"${SRCROOT}/../../../cdn-root/ios\"\nDEST=\"${TARGET_BUILD_DIR}/${UNLOCALIZED_RESOURCES_FOLDER_PATH}\"\nif [ ! -d \"$SRC\" ]; then\n  echo \"warning: cdn-root not found at $SRC; run 'node tools/build-cdn.mjs' before a release build\"\n  exit 0\nfi\ncount=0\nfind \"$SRC\" -name '*.bundle' ! -name '*.map' -print0 | while IFS= read -r -d '' f; do\n  cp -f \"$f\" \"$DEST/\"\ndone\ncount=$(find \"$SRC\" -name '*.bundle' ! -name '*.map' | wc -l | tr -d ' ')\necho \"embedded $count federated remote bundles into $DEST\"\n";
 		};
 		C38B50BA6285516D6DCD4F65 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;

@@ -1,4 +1,4 @@
-import {ScriptManager, Script} from '@callstack/repack/client';
+import {ScriptManager} from '@callstack/repack/client';
 import {Platform} from 'react-native';
 import {registerRemotes} from '@module-federation/runtime';
 import {mmkvStorage} from './storage';
@@ -67,25 +67,47 @@ function registerCdnRemotes(versions: Record<string, string>): void {
   );
 }
 
-// --- Bundled fallback. The embed build phase copies each remote's prod manifest + chunks into
-// the app's Resources; this resolver serves any remote chunk (and the container) off the
-// filesystem via Re.Pack's getFileSystemURL, so the federation runs with zero network. Scoped to
-// the bundled mode so it never shadows the CDN/dev resolution. ---
+// --- Bundled fallback (WORK IN PROGRESS). The embed build phase copies each remote's prod
+// container + chunks into the app's Resources. Each remote is registered with a CONTAINER entry
+// (file://.../container), never an mf-manifest.json URL: a manifest entry makes the MF runtime
+// fetch the manifest itself, and RN's fetch can't read file://. With a container entry the host's
+// MF runtime loads the remote entry through the host ScriptManager, and this resolver maps it to
+// the embedded file by name. VERIFIED: the container loads from the bundle offline.
+//
+// KNOWN LIMITATION: a remote's own chunks (especially shared/vendor chunks like nativewind's
+// jsx-runtime) load through the REMOTE's webpack runtime using the publicPath baked into it at
+// build time (the CDN), which bypasses the host ScriptManager entirely, so this resolver never
+// sees them and they fail offline (ChunkLoadError). True offline boot needs the remotes rebuilt
+// with filesystem-aware chunk loading (publicPath/ScriptManager), which is the open follow-up.
+// Until then the CDN path is the production path and this fallback only loads the container. ---
 let bundledResolverAdded = false;
 function addBundledResolver(): void {
   if (bundledResolverAdded) return;
   bundledResolverAdded = true;
-  ScriptManager.shared.addResolver(async (scriptId, _caller) => {
-    return {url: Script.getFileSystemURL(scriptId)};
-  });
+  ScriptManager.shared.addResolver(
+    async (scriptId, _caller, referenceUrl) => {
+      let filename: string | undefined;
+      if (referenceUrl) {
+        filename = referenceUrl.split('?')[0].split('/').pop() || undefined;
+      } else if (REMOTE_NAMES.includes(scriptId as (typeof REMOTE_NAMES)[number])) {
+        filename = `${scriptId}.container.js.bundle`;
+      }
+      if (!filename) return undefined;
+      return {url: `file:///${filename}`, cache: false};
+    },
+    {key: '__bundled_fs__', priority: 100},
+  );
 }
 
-function registerBundledRemotes(versions: Record<string, string>): void {
+function registerBundledRemotes(_versions: Record<string, string>): void {
   addBundledResolver();
   registerRemotes(
     REMOTE_NAMES.map(name => ({
       name,
-      entry: `${name}/${versions[name] ?? '0.0.0'}/mf-manifest.json`,
+      // Plain file:// container URL, no `name@` prefix: the prefix leaks into the resolved URL
+      // and the native loader reads its scheme as the remote name ("UnsupportedScheme"). A bare
+      // .bundle URL is detected as a container entry (a .json would be a manifest).
+      entry: `file:///${name}.container.js.bundle`,
     })),
     {force: true},
   );
