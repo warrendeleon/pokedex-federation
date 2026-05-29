@@ -11,6 +11,8 @@ import {
 import {
   ScreenContainer,
   PokemonGrid,
+  FlashList,
+  Box,
   VStack,
   HStack,
   Heading,
@@ -57,25 +59,33 @@ function RegionsMainScreen({navigation}: NativeStackScreenProps<RegionsParamList
       ) : isError || !data ? (
         <ErrorState onRetry={refetch} />
       ) : (
-        <VStack space="md" className="px-4 pt-1">
-          {data.map(region => (
-            <Pressable
-              key={region.name}
-              className="active:opacity-80"
-              onPress={() =>
-                navigation.navigate('RegionDex', {regionName: region.name, label: region.label})
-              }>
-              <Card className="bg-white rounded-2xl p-4">
-                <Heading size="lg" className="text-black">
-                  {region.label}
-                </Heading>
-                <Text size="sm" className="text-midGrey">
-                  {region.generation}
-                </Text>
-              </Card>
-            </Pressable>
-          ))}
-        </VStack>
+        // FlashList, not a mapped VStack: the region index can run past the screen, and a plain
+        // column View doesn't scroll. FlashList recycles rows and scrolls; per-row padding gives
+        // the spacing the VStack space prop used to.
+        <Box className="flex-1">
+          <FlashList
+            data={data}
+            keyExtractor={region => region.name}
+            renderItem={({item}) => (
+              <Box className="px-4 pt-3">
+                <Pressable
+                  className="active:opacity-80"
+                  onPress={() =>
+                    navigation.navigate('RegionDex', {regionName: item.name, label: item.label})
+                  }>
+                  <Card className="bg-white rounded-2xl p-4">
+                    <Heading size="lg" className="text-black">
+                      {item.label}
+                    </Heading>
+                    <Text size="sm" className="text-midGrey">
+                      {item.generation}
+                    </Text>
+                  </Card>
+                </Pressable>
+              </Box>
+            )}
+          />
+        </Box>
       )}
     </ScreenContainer>
   );
