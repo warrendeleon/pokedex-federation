@@ -14,6 +14,10 @@
 //     host's single store at runtime; that only works sharing the host's instance.
 //   - nativewind: the cssInterop style registry is module-level singleton state; remotes'
 //     styled components must register against the host's registry.
+//   - @shopify/flash-list: the recycling list engine behind PokemonGrid. FlashList v2 is pure
+//     JS on the new architecture (no native module / pod), so sharing it is for dedup, not
+//     nativeness: one copy of the engine across host + remotes instead of each bundling its own,
+//     and one version so list behaviour can't drift between micro-apps.
 //   - @pokedex/contracts / @pokedex/ui: the route registry + design system; remotes consume the
 //     host's instances so ROUTE_REGISTRY identity and the Gluestack provider/theme are shared.
 //
@@ -31,6 +35,7 @@ export const SINGLETON_NAMES = [
   '@react-navigation/bottom-tabs',
   'react-native-screens',
   'react-native-safe-area-context',
+  '@shopify/flash-list',
   '@reduxjs/toolkit',
   'react-redux',
   'redux-persist',

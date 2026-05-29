@@ -1,41 +1,31 @@
 import React from 'react';
-import {ScrollView, View} from 'react-native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import {ScreenContainer, PokemonCard} from '@pokedex/ui';
+import {ScreenContainer, PokemonGrid, type PokemonGridEntry} from '@pokedex/ui';
 import {shellNavigate} from '@pokedex/contracts';
 import {artworkUri} from './pokeApi';
 
-// --- partyApp's exposed stack: the party manager. Dark-themed (ScreenContainer variant)
-// to give the tab a strong visual identity, matching the reference design. For now it renders
-// a static party; wiring it to the host-owned party slice (read members, remove, Quick Battle)
-// happens in the visual + state pass. ---
+// --- partyApp's exposed stack: the party manager. Dark-themed (ScreenContainer variant) to
+// give the tab a strong visual identity, matching the reference design. Renders the same
+// FlashList-backed PokemonGrid as the Pokédex tab at two columns. For now it shows a static
+// party; wiring it to the host-owned party slice (read members, remove, Quick Battle) happens
+// in the visual + state pass. ---
 
 const Stack = createNativeStackNavigator();
 
-const DEMO_PARTY: {id: number; name: string; types: string[]}[] = [
-  {id: 3, name: 'Venusaur', types: ['grass', 'poison']},
-  {id: 9, name: 'Blastoise', types: ['water']},
-  {id: 6, name: 'Charizard', types: ['fire', 'flying']},
+const DEMO_PARTY: PokemonGridEntry[] = [
+  {id: 3, name: 'Venusaur', types: ['grass', 'poison'], spriteUri: artworkUri(3)},
+  {id: 9, name: 'Blastoise', types: ['water'], spriteUri: artworkUri(9)},
+  {id: 6, name: 'Charizard', types: ['fire', 'flying'], spriteUri: artworkUri(6)},
 ];
 
 function PartyMainScreen() {
   return (
     <ScreenContainer variant="dark">
-      <ScrollView contentContainerClassName="p-3">
-        <View className="flex-row flex-wrap justify-between">
-          {DEMO_PARTY.map(p => (
-            <View key={p.id} className="w-[48%] mb-3">
-              <PokemonCard
-                id={p.id}
-                name={p.name}
-                types={p.types}
-                spriteUri={artworkUri(p.id)}
-                onPress={() => shellNavigate('PokemonDetail', {id: p.id})}
-              />
-            </View>
-          ))}
-        </View>
-      </ScrollView>
+      <PokemonGrid
+        data={DEMO_PARTY}
+        numColumns={2}
+        onPressItem={entry => shellNavigate('PokemonDetail', {id: entry.id})}
+      />
     </ScreenContainer>
   );
 }
