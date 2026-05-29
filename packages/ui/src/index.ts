@@ -11,6 +11,7 @@
 
 export * from './tokens';
 export * from './components';
+export * from './primitives';
 
 // --- Gluestack provider re-export. The actual file lives at src/components/ui/gluestack-ui-provider/
 // (where the CLI puts it, after we relocated `components/` under src/ so react-native-builder-bob
