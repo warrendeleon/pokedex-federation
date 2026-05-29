@@ -54,13 +54,19 @@ export function getMFShared(side, pkg) {
   const deps = {...(pkg.devDependencies ?? {}), ...(pkg.dependencies ?? {})};
   const shared = {};
   for (const name of SINGLETON_NAMES) {
-    const v = deps[name];
+    const range = deps[name];
+    // MF distinguishes two fields: `version` is the CONCRETE version this side provides;
+    // `requiredVersion` is the semver RANGE it accepts. Passing the raw range as `version`
+    // (e.g. "^0.4.0") makes the runtime test satisfies("^0.4.0", "^0.4.0") -> false, since a
+    // range is not a concrete version, and it logs a noisy "does not satisfy" warning for every
+    // caret-ranged singleton. Strip the range operator so the provided version is concrete
+    // ("^0.4.0" -> "0.4.0"), which this pinned monorepo installs exactly.
+    const version = range ? range.replace(/^[\^~>=<\s]+/, '') : undefined;
     shared[name] = {
       singleton: true,
       eager,
-      // Explicit version + requiredVersion (MF V2 silently drops shared config when
-      // requiredVersion is missing). Fall back to '*' only if the app doesn't depend on it.
-      ...(v ? {version: v, requiredVersion: v} : {requiredVersion: '*'}),
+      // requiredVersion missing makes MF V2 silently DROP the shared config, so always set it.
+      ...(range ? {version, requiredVersion: range} : {requiredVersion: '*'}),
     };
   }
   return shared;
