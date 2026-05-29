@@ -17,10 +17,15 @@ const battleResult = createAction<BattleResultPayload>(
 // --- Cross-module add-to-party. detailApp and listApp dispatch these contract actions with the
 // full member; the host-owned slice adds it. Same decoupling as battleResult: the remotes never
 // import this slice, only the action-type strings from @pokedex/contracts. ---
-const addFromDetail = createAction<PartyMember>(
+const addFromDetail = createAction<IncomingPartyMember>(
   CROSS_MODULE_ACTIONS.detail.addToPartyFromDetail,
 );
-const addFromList = createAction<PartyMember>(CROSS_MODULE_ACTIONS.list.addToParty);
+const addFromList = createAction<IncomingPartyMember>(CROSS_MODULE_ACTIONS.list.addToParty);
+
+// --- Cross-module remove. partyApp dispatches this contract action with the member's uid (NOT
+// its Pokémon id): the party allows duplicates, so the id is ambiguous; the uid identifies the
+// exact slot to drop. ---
+const removeByUid = createAction<{uid: number}>(CROSS_MODULE_ACTIONS.party.remove);
 
 // --- Host-owned, cross-cutting state: the player's party of up to 6 Pokémon. Lives in the
 // host store from boot (not injected by a remote) because three different remotes read or
@@ -35,20 +40,29 @@ const addFromList = createAction<PartyMember>(CROSS_MODULE_ACTIONS.list.addToPar
 export const MAX_PARTY = 6;
 
 export interface PartyMember {
+  /** Unique per party slot, assigned on add. Distinct from `id` so two of the same Pokémon are
+   *  separate slots (the party allows duplicates) and removal can target one exact slot. */
+  uid: number;
   id: number;
   name: string;
   types: string[];
   spriteUri?: string;
 }
 
+/** What a remote sends when adding: no uid (the slice assigns it). */
+export type IncomingPartyMember = Omit<PartyMember, 'uid'>;
+
 interface PartyState {
   members: PartyMember[];
+  /** Monotonic source of party-slot uids; survives persistence so uids never repeat. */
+  nextUid: number;
   /** Set by the native QuickBattle handoff result; surfaced in the UI + pushed to native. */
   lastBattleWinnerId: number | null;
 }
 
 const initialState: PartyState = {
   members: [],
+  nextUid: 1,
   lastBattleWinnerId: null,
 };
 
@@ -56,14 +70,15 @@ const partySlice = createSlice({
   name: 'party',
   initialState,
   reducers: {
-    addToParty(state, action: PayloadAction<PartyMember>) {
+    addToParty(state, action: PayloadAction<IncomingPartyMember>) {
       // --- Party is capped; adding at capacity is a graceful no-op, never a crash.
-      // Duplicates are allowed (two Pikachus is fine) per the brief. ---
+      // Duplicates are allowed (two Pikachus is fine) per the brief; each gets its own uid. ---
       if (state.members.length >= MAX_PARTY) return;
-      state.members.push(action.payload);
+      state.members.push({uid: state.nextUid++, ...action.payload});
     },
-    removeFromParty(state, action: PayloadAction<{index: number}>) {
-      state.members.splice(action.payload.index, 1);
+    removeFromParty(state, action: PayloadAction<{uid: number}>) {
+      // Remove by uid, not index/id: duplicates share an id, and indices shift as the list changes.
+      state.members = state.members.filter(m => m.uid !== action.payload.uid);
     },
     clearParty(state) {
       state.members = [];
@@ -80,12 +95,16 @@ const partySlice = createSlice({
     builder.addCase(battleResult, (state, action) => {
       state.lastBattleWinnerId = action.payload.winnerId;
     });
-    const add = (state: PartyState, action: PayloadAction<PartyMember>) => {
+    const add = (state: PartyState, action: PayloadAction<IncomingPartyMember>) => {
       if (state.members.length >= MAX_PARTY) return; // capped; graceful no-op
-      state.members.push(action.payload);
+      state.members.push({uid: state.nextUid++, ...action.payload});
     };
     builder.addCase(addFromDetail, add);
     builder.addCase(addFromList, add);
+    // --- Cross-module remove: partyApp dispatches CROSS_MODULE_ACTIONS.party.remove with a uid. ---
+    builder.addCase(removeByUid, (state, action) => {
+      state.members = state.members.filter(m => m.uid !== action.payload.uid);
+    });
   },
   selectors: {
     selectParty: state => state.members,

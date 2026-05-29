@@ -24,6 +24,7 @@ import {shellNavigate, CROSS_MODULE_ACTIONS} from '@pokedex/contracts';
 const Stack = createNativeStackNavigator();
 
 interface PartyMember {
+  uid: number;
   id: number;
   name: string;
   types: string[];
@@ -52,11 +53,19 @@ function PartyMainScreen() {
   };
 
   const data: PokemonGridEntry[] = members.map(m => ({
+    uid: m.uid,
     id: m.id,
     name: m.name,
     types: m.types,
     spriteUri: m.spriteUri,
   }));
+
+  const onRemove = (entry: PokemonGridEntry) => {
+    // Cross-module write: partyApp asks the host-owned slice to drop this exact slot by uid.
+    if (entry.uid != null) {
+      dispatch({type: CROSS_MODULE_ACTIONS.party.remove, payload: {uid: entry.uid}});
+    }
+  };
 
   return (
     <ScreenContainer variant="dark">
@@ -84,7 +93,10 @@ function PartyMainScreen() {
           <PokemonGrid
             data={data}
             numColumns={2}
-            onPressItem={entry => shellNavigate('PokemonDetail', {id: entry.id})}
+            // Pass the slot uid so the detail screen knows this Pokémon is already a party member
+            // (it shows an "in party" indicator instead of Add to Party).
+            onPressItem={entry => shellNavigate('PokemonDetail', {id: entry.id, uid: entry.uid})}
+            onRemoveItem={onRemove}
           />
         </Box>
       )}

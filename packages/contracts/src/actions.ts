@@ -9,7 +9,8 @@ export const CROSS_MODULE_ACTIONS = {
     addToParty: 'list/addToParty',
   },
   party: {
-    /** User removed a Pokémon from the party. payload: {id: number} */
+    /** User removed a Pokémon from the party. payload: {uid: number} (the party-slot uid, not
+     *  the Pokémon id, since the party allows duplicates). */
     remove: 'party/remove',
     /** Native QuickBattle returned a winner. payload: {winnerId: number, leftId: number, rightId: number, ko: boolean} */
     battleResult: 'party/battleResult',
