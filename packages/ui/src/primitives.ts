@@ -13,10 +13,17 @@ export {Center} from './components/ui/center';
 export {Spinner} from './components/ui/spinner';
 export {Image} from './components/ui/image';
 export {SafeAreaView} from './components/ui/safe-area-view';
+// --- Layout primitives: VStack / HStack drive spacing through their `space` prop (a token
+// scale, gap-1 … gap-8), Divider is a hairline rule. Their spacing classes live in this
+// package's source, so the host's Tailwind scan generates them and they resolve on the shared
+// singletons from any remote, with no remote-authored utility classes. ---
+export {VStack} from './components/ui/vstack';
+export {HStack} from './components/ui/hstack';
+export {Divider} from './components/ui/divider';
 
 // --- FlashList: the recycling list engine, re-exported so remotes consume it through the
-// design system rather than depending on @shopify/flash-list directly. Its native view is
-// compiled into the host and shared as a federation singleton; this re-export is the JS surface.
+// design system rather than depending on @shopify/flash-list directly. FlashList v2 is pure
+// JavaScript on the new architecture (no native view); shared as a federation JS singleton.
 export {FlashList, type FlashListProps} from '@shopify/flash-list';
 export {
   Button,

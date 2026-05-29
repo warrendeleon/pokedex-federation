@@ -13,7 +13,7 @@ export interface InfoRowProps {
 
 export function InfoRow({label, value}: InfoRowProps) {
   return (
-    <Box className="flex-row justify-between py-2 border-b border-lightGrey">
+    <Box className="flex-row justify-between py-3.5 border-b border-lightGrey">
       <Text size="sm" className="text-darkGrey">
         {label}
       </Text>

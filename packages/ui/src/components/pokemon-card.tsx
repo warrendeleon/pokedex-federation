@@ -24,6 +24,8 @@ export interface PokemonCardProps {
   spriteUri?: string;
   spriteSource?: ImageSourcePropType;
   onPress?: () => void;
+  /** When set, a remove (✕) badge is shown in the corner; tapping it runs this, not onPress. */
+  onRemove?: () => void;
 }
 
 export function PokemonCard({
@@ -33,6 +35,7 @@ export function PokemonCard({
   spriteUri,
   spriteSource,
   onPress,
+  onRemove,
 }: PokemonCardProps) {
   const primaryType = types[0] ?? 'normal';
   const tintBg = tintBgClassForType(primaryType);
@@ -43,6 +46,17 @@ export function PokemonCard({
   return (
     <Pressable onPress={onPress} className="active:opacity-80">
       <Card className="bg-white rounded-2xl p-3 items-center">
+        {onRemove ? (
+          <Pressable
+            onPress={onRemove}
+            accessibilityLabel={`Remove ${name} from party`}
+            className="absolute top-1.5 right-1.5 z-10 h-6 w-6 rounded-full bg-red items-center justify-center active:opacity-70"
+          >
+            <Text size="xs" bold className="text-white">
+              ✕
+            </Text>
+          </Pressable>
+        ) : null}
         <Text size="xs" className="text-midGrey self-start mb-1">
           {idLabel}
         </Text>

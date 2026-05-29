@@ -21,7 +21,7 @@ export interface StatBarProps {
 export function StatBar({label, value, colourType, max = 255}: StatBarProps) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
   return (
-    <Box className="flex-row items-center py-1.5">
+    <Box className="flex-row items-center py-2.5">
       <Text size="sm" className="text-darkGrey w-[72px]">
         {label}
       </Text>

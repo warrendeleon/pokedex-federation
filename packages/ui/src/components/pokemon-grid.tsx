@@ -22,6 +22,9 @@ export interface PokemonGridEntry {
   name: string;
   types: string[];
   spriteUri?: string;
+  // Unique per rendered slot, used as the list key. The party sets this so two of the same
+  // Pokémon are distinct cells; the Pokédex omits it and keys by id (its ids are already unique).
+  uid?: number;
 }
 
 export interface PokemonGridProps {
@@ -33,6 +36,8 @@ export interface PokemonGridProps {
   onEndReached?: () => void;
   // Renders a footer spinner while the next page is in flight.
   isFetchingNextPage?: boolean;
+  // When set, each card shows a remove (✕) badge; tapping it calls this with the entry.
+  onRemoveItem?: (entry: PokemonGridEntry) => void;
 }
 
 export function PokemonGrid({
@@ -41,12 +46,13 @@ export function PokemonGrid({
   numColumns = 3,
   onEndReached,
   isFetchingNextPage = false,
+  onRemoveItem,
 }: PokemonGridProps) {
   return (
     <FlashList
       data={data}
       numColumns={numColumns}
-      keyExtractor={entry => String(entry.id)}
+      keyExtractor={entry => String(entry.uid ?? entry.id)}
       onEndReached={onEndReached}
       onEndReachedThreshold={0.5}
       ListFooterComponent={
@@ -64,6 +70,7 @@ export function PokemonGrid({
             types={item.types}
             spriteUri={item.spriteUri}
             onPress={onPressItem ? () => onPressItem(item) : undefined}
+            onRemove={onRemoveItem ? () => onRemoveItem(item) : undefined}
           />
         </Box>
       )}
