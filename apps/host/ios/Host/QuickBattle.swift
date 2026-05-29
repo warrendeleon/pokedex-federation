@@ -14,8 +14,16 @@ import SwiftUI
 /// last battle winner) with no React render. Native observes; it never mutates the RN store.
 @objc public class NativeStore: NSObject {
   @objc public static let shared = NativeStore()
-  @objc public private(set) var partySize: Int = 0
-  @objc public private(set) var lastBattleWinnerId: Int = -1
+
+  // apply() runs on the JS thread (updateState is a synchronous TurboModule method); the getters
+  // are read from the main thread (SwiftUI). A lock keeps the cross-thread access race-free, which
+  // a plain stored property would not (and which Swift strict concurrency would reject).
+  private let lock = NSLock()
+  private var _partySize = 0
+  private var _lastBattleWinnerId = -1
+
+  @objc public var partySize: Int { lock.withLock { _partySize } }
+  @objc public var lastBattleWinnerId: Int { lock.withLock { _lastBattleWinnerId } }
 
   /// Called from StoreObserverModule with a bridge envelope (dataKey + JSON payload string).
   @objc public func apply(dataKey: String, payloadJson: String) {
@@ -25,9 +33,9 @@ import SwiftUI
     let payload = envelope["payload"]
     switch dataKey {
     case "party.size":
-      partySize = (payload as? Int) ?? 0
+      lock.withLock { _partySize = (payload as? Int) ?? 0 }
     case "party.lastBattleWinnerId":
-      lastBattleWinnerId = (payload as? Int) ?? -1
+      lock.withLock { _lastBattleWinnerId = (payload as? Int) ?? -1 }
     default:
       break
     }
@@ -60,7 +68,10 @@ import SwiftUI
   @objc public var deepLinkHandler: ((String) -> Void)?
 
   /// The URL that launched the app, held until JS drains it via consumeInitialDeepLink. Only used
-  /// on cold start, when AppDelegate receives the link before the JS handler is attached.
+  /// on cold start, when AppDelegate receives the link before the JS handler is attached. Written
+  /// from the main thread (AppDelegate) and drained from a background TurboModule queue, so it's
+  /// guarded by a lock.
+  private let lock = NSLock()
   private var pendingDeepLink: String?
 
   /// Called by AppDelegate for every inbound URL (custom scheme or universal link). If JS is
@@ -69,16 +80,18 @@ import SwiftUI
     if let handler = deepLinkHandler {
       handler(url)
     } else {
-      pendingDeepLink = url
+      lock.withLock { pendingDeepLink = url }
     }
   }
 
   /// Drained once by JS on startup. Returns the buffered launch URL (empty string if none) and
   /// clears it, so a cold-start link routes exactly once.
   @objc public func consumeInitialDeepLink() -> String {
-    let url = pendingDeepLink ?? ""
-    pendingDeepLink = nil
-    return url
+    lock.withLock {
+      let url = pendingDeepLink ?? ""
+      pendingDeepLink = nil
+      return url
+    }
   }
 }
 
@@ -93,6 +106,12 @@ private struct Contestant: Identifiable {
 /// the shell handed over (RN -> Native input), presents the SwiftUI battle, and calls completion
 /// with a JSON result string (native -> RN output) that the shell parses back into the store.
 @objc public class QuickBattlePresenter: NSObject {
+  // Re-entrancy guard. UIKit's present() silently no-ops if the host is already presenting or
+  // mid-transition; if that happened, completion would never fire and the openNative promise on
+  // the JS side would hang forever. Refuse a second presentation while one is up, settling the
+  // promise immediately instead. Main-thread only, so no lock needed.
+  private static var isPresenting = false
+
   @objc public static func present(
     nativeId: String,
     paramsJson: String,
@@ -103,16 +122,21 @@ private struct Contestant: Identifiable {
     // openNative is invoked on the TurboModule's background thread; all UIKit/SwiftUI work
     // (presenting, dismissing) must hop to the main thread or UIKit raises.
     DispatchQueue.main.async {
-      guard let host = Self.topViewController() else {
+      guard let host = Self.topViewController(), !isPresenting else {
+        // No host, or a presentation is already in flight: settle the promise rather than wedge it.
         completion("{}")
         return
       }
+      isPresenting = true
 
       let view = QuickBattleView(
         contestants: contestants,
         observedPartySize: NativeStore.shared.partySize
       ) { resultJson in
-        host.dismiss(animated: true) { completion(resultJson) }
+        host.dismiss(animated: true) {
+          isPresenting = false
+          completion(resultJson)
+        }
       }
 
       let controller = UIHostingController(rootView: view)
