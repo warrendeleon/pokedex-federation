@@ -1,11 +1,11 @@
 {
-  "name": "listApp",
+  "name": "partyApp",
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start:remote": "react-native start --config rspack.config.mjs --port 8082",
-    "bundle:ios": "react-native bundle --platform ios --entry-file index.js --bundle-output build/ios/listApp.jsbundle --config rspack.config.mjs",
-    "bundle:ios:prod": "react-native bundle --platform ios --dev false --entry-file index.js --bundle-output build/ios/listApp.jsbundle --config rspack.config.mjs",
+    "start:remote": "react-native start --config rspack.config.mjs --port 8083",
+    "bundle:ios": "react-native bundle --platform ios --entry-file index.js --bundle-output build/ios/partyApp.jsbundle --config rspack.config.mjs",
+    "bundle:ios:prod": "react-native bundle --platform ios --dev false --entry-file index.js --bundle-output build/ios/partyApp.jsbundle --config rspack.config.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
@@ -35,9 +35,9 @@
     "@callstack/repack-plugin-nativewind": "^5.2.5",
     "@module-federation/enhanced": "^2.5.0",
     "@module-federation/runtime": "^2.5.0",
-    "@react-native-community/cli": "^20.1.0",
-    "@react-native-community/cli-platform-android": "^20.1.0",
-    "@react-native-community/cli-platform-ios": "^20.1.0",
+    "@react-native-community/cli": "20.1.0",
+    "@react-native-community/cli-platform-android": "20.1.0",
+    "@react-native-community/cli-platform-ios": "20.1.0",
     "@react-native/babel-preset": "0.85.3",
     "@react-native/typescript-config": "0.85.3",
     "@rspack/core": "^2.0.5",

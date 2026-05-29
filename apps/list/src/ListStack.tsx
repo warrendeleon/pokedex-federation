@@ -8,7 +8,7 @@ import {artworkUri} from './pokeApi';
 // --- listApp's exposed navigation stack: the Pokédex grid. Loaded into the host's tab via
 // Module Federation. Proves the federation boundary end-to-end: the remote composes the shared
 // @pokedex/ui design system, navigates cross-feature through shell.navigateTo (to the
-// detailApp remote), and styles via the shared NativeWind registry — all resolved from the
+// detailApp remote), and styles via the shared NativeWind registry, all resolved from the
 // host's singleton instances. Real PokéAPI list data + party integration arrive next. ---
 
 const Stack = createNativeStackNavigator();
