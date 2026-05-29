@@ -67,25 +67,23 @@ function registerCdnRemotes(versions: Record<string, string>): void {
   );
 }
 
-// --- Bundled fallback (WORK IN PROGRESS). The embed build phase copies each remote's prod
-// container + chunks into the app's Resources. Each remote is registered with a CONTAINER entry
-// (file://.../container), never an mf-manifest.json URL: a manifest entry makes the MF runtime
-// fetch the manifest itself, and RN's fetch can't read file://. With a container entry the host's
-// MF runtime loads the remote entry through the host ScriptManager, and this resolver maps it to
-// the embedded file by name. VERIFIED: the container loads from the bundle offline.
+// --- Bundled (offline) fallback (PARTIAL; CDN is the verified production path). The embed build
+// phase copies each remote's prod container + chunks into the app's Resources, and
+// tools/build-cdn.mjs embeds the remotes' manifests into the JS bundle. Two pieces are wired: ---
 //
-// KNOWN LIMITATION (offline rendering not finished; CDN is the verified production path). The
-// resolver DOES fire and maps every chunk to its embedded file:// copy (verified by logging:
-// noop:///<chunk> -> file:///<chunk>), the file is present and loads, yet the remote's
-// shared/vendor chunks (e.g. nativewind's jsx-runtime) fail webpack chunk-registration offline.
-// Root cause: a container entry avoids the manifest fetch (RN can't fetch file://), but it also
-// means the MF runtime never sees the remote's shared-dependency config (which lives in the
-// manifest), so the remote falls back to loading its own copies of shared deps and their chunks
-// don't register against the expected runtime. A manifest entry would carry the shared config
-// but can't be fetched offline. Finishing this needs a remote-build change (eager-share on the
-// remotes so shared deps inline into the container, OR no code-splitting in remotes, OR making
-// the embedded manifest readable offline) and must not regress the CDN/dev paths. Until then
-// this fallback reliably loads the container only. ---
+// STATUS: the container loads from the bundle and, with the embedded manifest, MF reads each
+// remote's shared-dependency config so shared deps (react, react-native, nativewind, ...) resolve
+// from the host's singletons. STILL BROKEN: a remote's NON-shared code-split chunk
+// (nativewind/jsx-runtime) loads from file:// but fails webpack chunk-registration offline (the
+// same chunk registers fine over HTTP), so a bundled launch still crashes with ChunkLoadError.
+// Closing this needs eager-sharing the JSX runtime, or building remotes without code-splitting
+// (which breaks singleton sharing), or a Re.Pack offline chunk-registration fix; none of these
+// landed without risking the CDN/dev paths. Do NOT run a Release build offline until resolved. ---
+
+// 1. A high-priority resolver maps every remote script (container + chunks) to its embedded
+//    file:// copy by filename. The remote's runtime computes chunk URLs from publicPath "noop:///"
+//    (a Re.Pack sentinel that forces ScriptManager resolution), so referenceUrl is noop:///<file>
+//    and we rewrite it to file:///<file>; the native loader serves it from the app bundle.
 let bundledResolverAdded = false;
 function addBundledResolver(): void {
   if (bundledResolverAdded) return;
@@ -105,15 +103,45 @@ function addBundledResolver(): void {
   );
 }
 
+// 2. The MF runtime fetches each remote's mf-manifest.json to learn its shared-dependency config.
+//    RN's fetch can't read file://, so we serve the manifests (embedded in the JS bundle by
+//    tools/build-cdn.mjs) from a sentinel scheme via a scoped fetch patch. With the manifest, MF
+//    knows the remote shares nativewind/react/... and resolves them from the host's singletons
+//    instead of loading the remote's own copies (which previously failed chunk-registration
+//    offline). Everything that isn't a sentinel manifest URL passes through untouched.
+const EMBEDDED_MANIFEST_PREFIX = 'embedded-manifest:///';
+let embeddedFetchInstalled = false;
+function installEmbeddedManifestFetch(): void {
+  if (embeddedFetchInstalled) return;
+  embeddedFetchInstalled = true;
+  const original = globalThis.fetch;
+  globalThis.fetch = function patchedFetch(input: RequestInfo, init?: RequestInit) {
+    const url = typeof input === 'string' ? input : input.url;
+    if (url.startsWith(EMBEDDED_MANIFEST_PREFIX)) {
+      const name = url.slice(EMBEDDED_MANIFEST_PREFIX.length).split('/')[0];
+      const manifest = (embeddedManifests as Record<string, unknown>)[name];
+      if (manifest) {
+        return Promise.resolve(
+          new Response(JSON.stringify(manifest), {
+            status: 200,
+            headers: {'Content-Type': 'application/json'},
+          }),
+        );
+      }
+    }
+    return original.call(globalThis, input, init);
+  } as typeof fetch;
+}
+
 function registerBundledRemotes(_versions: Record<string, string>): void {
+  installEmbeddedManifestFetch();
   addBundledResolver();
+  // Manifest entries (served offline by the fetch patch above) so MF gets the shared config; the
+  // resolver then maps the container + chunks to their embedded files.
   registerRemotes(
     REMOTE_NAMES.map(name => ({
       name,
-      // Plain file:// container URL, no `name@` prefix: the prefix leaks into the resolved URL
-      // and the native loader reads its scheme as the remote name ("UnsupportedScheme"). A bare
-      // .bundle URL is detected as a container entry (a .json would be a manifest).
-      entry: `file:///${name}.container.js.bundle`,
+      entry: `${EMBEDDED_MANIFEST_PREFIX}${name}/mf-manifest.json`,
     })),
     {force: true},
   );
@@ -122,6 +150,9 @@ function registerBundledRemotes(_versions: Record<string, string>): void {
 // --- The version-map shipped inside the app alongside the embedded bundles. The embed phase
 // writes the real values; this default keeps a release build honest if the phase is skipped. ---
 import embeddedVersionMap from './embeddedVersionMap.json';
+// Remote manifests embedded by tools/build-cdn.mjs; served to the MF runtime offline (see the
+// fetch patch above) so it gets each remote's shared-dependency config without a network call.
+import embeddedManifests from './embeddedManifests.json';
 
 // --- Awaited by the federation gate in App.tsx before the navigator (and its React.lazy
 // federated tabs) mounts, so the resolver + remote registrations are in place before the MF

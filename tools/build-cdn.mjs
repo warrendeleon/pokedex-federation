@@ -11,7 +11,7 @@
 // Usage: node tools/build-cdn.mjs [platform]   (platform defaults to ios)
 
 import {execSync} from 'node:child_process';
-import {cpSync, mkdirSync, rmSync, writeFileSync} from 'node:fs';
+import {cpSync, mkdirSync, readFileSync, rmSync, writeFileSync} from 'node:fs';
 import {dirname, join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 
@@ -52,6 +52,21 @@ writeFileSync(
   join(cdnRoot, platform, 'version-map.json'),
   JSON.stringify(versionMap, null, 2) + '\n',
 );
+
+// --- Embed each remote's manifest into the host source. The offline (bundled) path serves these
+// to the MF runtime via a patched fetch so it gets the remotes' shared-dependency config without
+// a network request, which is what lets the embedded bundles boot offline. ---
+const embeddedManifests = {};
+for (const [remote, version] of Object.entries(REMOTES)) {
+  embeddedManifests[remote] = JSON.parse(
+    readFileSync(join(cdnRoot, platform, remote, version, 'mf-manifest.json'), 'utf8'),
+  );
+}
+writeFileSync(
+  join(repoRoot, 'apps', 'host', 'src', 'shell', 'embeddedManifests.json'),
+  JSON.stringify(embeddedManifests, null, 2) + '\n',
+);
+console.log(`embedded ${Object.keys(embeddedManifests).length} manifests into host src`);
 
 console.log(`\nversion-map.json:\n${JSON.stringify(versionMap, null, 2)}`);
 console.log(`\nCDN assembled at ${cdnRoot}`);
