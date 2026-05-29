@@ -17,6 +17,30 @@
 
 RCT_EXPORT_MODULE()
 
+// --- Native -> RN wiring. TurboModules are singletons, so this one instance's emitOnShellNavigate
+// (inherited from the codegen SpecBase) is what every native screen reaches through the shared
+// ShellEventBridge. A native screen calls ShellEventBridge.requestNavigate(...); that fires this
+// handler, which emits the onShellNavigate event the host JS subscriber turns into a shell route.
+// By the time a user taps a native button, RN has wired the JS event callback, so the emit is
+// live. ---
+- (instancetype)init
+{
+  if (self = [super init]) {
+    __weak ShellNavigationModule *weakSelf = self;
+    ShellEventBridge.shared.requestHandler = ^(NSString *destination, NSString *paramsJson) {
+      ShellNavigationModule *strongSelf = weakSelf;
+      if (strongSelf == nil) {
+        return;
+      }
+      [strongSelf emitOnShellNavigate:@{
+        @"destination": destination ?: @"",
+        @"paramsJson": paramsJson ?: @"{}",
+      }];
+    };
+  }
+  return self;
+}
+
 - (void)openNative:(NSString *)nativeId
         paramsJson:(NSString *)paramsJson
            resolve:(RCTPromiseResolveBlock)resolve

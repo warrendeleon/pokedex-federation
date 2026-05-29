@@ -49,3 +49,12 @@ export const shellNavigateHandler: ShellNavigateFn = async (destination, params)
   }
   return undefined;
 };
+
+// --- Native -> RN: subscribe once to the module's onShellNavigate event. A native screen emits a
+// destination + params; we route it through the SAME shellNavigateHandler that JS callers use, so
+// native-driven navigation and micro-app navigation share one code path and one routing table.
+// Native fires this only on user interaction, long after the navigator is ready. ---
+ShellNavigationModule.onShellNavigate(request => {
+  const params = request.paramsJson ? JSON.parse(request.paramsJson) : {};
+  void shellNavigateHandler(request.destination, params);
+});

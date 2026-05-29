@@ -34,6 +34,27 @@ import SwiftUI
   }
 }
 
+// MARK: - Native -> RN navigation bridge
+
+/// The inverse of openNative. ShellNavigationModule sets `requestHandler` to its generated
+/// emitOnShellNavigate event; a native screen calls `requestNavigate` to ask the SHELL ROUTER to
+/// open any destination, an RN screen or another native flow, without knowing or caring which. So
+/// native drives React Navigation the same way a micro-app does, through the one routing table.
+/// Singleton for the same reason as NativeStore: the SwiftUI screen and the ObjC++ module are
+/// created independently and meet here.
+@objc public class ShellEventBridge: NSObject {
+  @objc public static let shared = ShellEventBridge()
+
+  /// Set by ShellNavigationModule. Receives (destination, paramsJson) and emits the event to JS.
+  @objc public var requestHandler: ((String, String) -> Void)?
+
+  /// Called by native screens. Asks the shell to navigate; paramsJson carries the route params,
+  /// the same JSON-string boundary openNative uses in the other direction.
+  @objc public func requestNavigate(destination: String, paramsJson: String) {
+    requestHandler?(destination, paramsJson)
+  }
+}
+
 // MARK: - Presenter (ObjC++ TurboModule -> SwiftUI bridge)
 
 private struct Contestant: Identifiable {
@@ -144,6 +165,21 @@ private struct QuickBattleView: View {
         }
         .buttonStyle(.borderedProminent)
         .controlSize(.large)
+
+        // Native -> RN: a native screen opening an RN screen. Once there's a winner, this asks the
+        // shell router to push the RN PokemonDetail for it, then dismisses the native flow so the
+        // RN screen it pushed underneath is revealed. Native chose an RN destination; it never
+        // touched React Navigation directly.
+        if let id = winnerId, let w = contestants.first(where: { $0.id == id }) {
+          Button("View \(w.name) in Pokédex") {
+            ShellEventBridge.shared.requestNavigate(
+              destination: "PokemonDetail",
+              paramsJson: "{\"id\": \(id)}"
+            )
+            finish()
+          }
+          .controlSize(.large)
+        }
       }
 
       Button("Done", action: finish).padding(.top, 8)
