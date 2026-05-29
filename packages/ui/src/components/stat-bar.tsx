@@ -14,11 +14,17 @@ export interface StatBarProps {
   value: number;
   /** Pokémon type whose colour fills the bar. */
   colourType: string;
-  /** Denominator for the fill fraction; PokéAPI base stats top out at 255. */
+  /**
+   * Denominator for the fill fraction. A single base stat can technically reach 255 (Blissey's
+   * HP), but almost nothing does, so scaling to 255 leaves every bar looking half-empty. We scale
+   * to 200, a practical "elite stat" ceiling: a genuinely strong stat reads as nearly full, the
+   * rare 200+ stat clamps to 100% (fair, it is maxed), and the common 40-150 range spreads across
+   * a readable 20-75%.
+   */
   max?: number;
 }
 
-export function StatBar({label, value, colourType, max = 255}: StatBarProps) {
+export function StatBar({label, value, colourType, max = 200}: StatBarProps) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
   return (
     <Box className="flex-row items-center py-2.5">
