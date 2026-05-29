@@ -20,6 +20,11 @@ export {SafeAreaView} from './components/ui/safe-area-view';
 export {VStack} from './components/ui/vstack';
 export {HStack} from './components/ui/hstack';
 export {Divider} from './components/ui/divider';
+// --- Toast: re-exported from the design system so remotes call useToast from this shared
+// singleton, not their own bundled @gluestack-ui copy. That matters because the host mounts the
+// ToastProvider (inside GluestackUIProvider); a remote's useToast must reference the SAME provider
+// context to render, which only holds when the hook comes from the shared @pokedex/ui instance. ---
+export {useToast, Toast, ToastTitle, ToastDescription} from './components/ui/toast';
 
 // --- FlashList: the recycling list engine, re-exported so remotes consume it through the
 // design system rather than depending on @shopify/flash-list directly. FlashList v2 is pure

@@ -1,3 +1,9 @@
+// --- Load this remote's compiled Tailwind into the shared cssInterop registry. The build entry
+// (src/index.js) imports global.css too, but that entry is NOT in the graph the host pulls when
+// it federates this exposed screen, so without this import the remote's own classNames (any class
+// not also present in host-scanned host / @pokedex/ui source) never register and silently no-op.
+// Importing it from the exposed module guarantees it loads whenever the screen does. ---
+import '../global.css';
 import React from 'react';
 import {ScrollView} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
@@ -6,15 +12,22 @@ import {
   Box,
   Button,
   ButtonText,
+  Center,
   ErrorState,
   Heading,
+  HStack,
   Image,
   InfoRow,
   LoadingState,
   ScreenContainer,
   StatBar,
   Text,
+  Toast,
+  ToastDescription,
+  ToastTitle,
   TypeBadge,
+  useToast,
+  VStack,
 } from '@pokedex/ui';
 import {CROSS_MODULE_ACTIONS} from '@pokedex/contracts';
 import {useGetPokemonDetailQuery} from './detailApi';
@@ -24,10 +37,17 @@ import {useGetPokemonDetailQuery} from './detailApi';
 // via shell.navigateTo('PokemonDetail', {id}). Visual design mirrors the reference: type-coloured
 // hero, Info section, Base Stats, full-width Add-to-Party. "Add to Party" proves the cross-module
 // write: detailApp dispatches a @pokedex/contracts action the host party slice reduces, and
-// partyApp re-renders from that store. ---
+// partyApp re-renders from that store.
+//
+// Built from Gluestack layout primitives: VStack / HStack / Center own the structure and all the
+// spacing comes from their `space` prop (a design-system token scale), not ad-hoc margins. Those
+// gap classes are generated from @pokedex/ui source, so they resolve on the shared singletons. ---
 
 interface Props {
-  route?: {params?: {id?: number}};
+  // uid is set only when this screen was opened from the party tab (the slot's uid). Its presence
+  // means "already a party member", which is how we show an in-party indicator instead of Add
+  // without breaking add-duplicates-from-the-Pokédex (where no uid is passed).
+  route?: {params?: {id?: number; uid?: number}};
 }
 
 interface PartySliceShape {
@@ -46,8 +66,11 @@ const STAT_LABELS: Record<string, string> = {
 
 export function PokemonDetailScreen({route}: Props) {
   const id = route?.params?.id ?? 1;
+  // Opened from the party tab carries the slot uid; that's our "already in party" signal.
+  const fromParty = route?.params?.uid != null;
   const {data, isLoading, isError, refetch} = useGetPokemonDetailQuery(id);
   const dispatch = useDispatch();
+  const toast = useToast();
   const partyCount = useSelector((s: PartySliceShape) => s.party?.members.length ?? 0);
   const isFull = partyCount >= MAX_PARTY;
 
@@ -72,62 +95,98 @@ export function PokemonDetailScreen({route}: Props) {
       type: CROSS_MODULE_ACTIONS.detail.addToPartyFromDetail,
       payload: {id: data.id, name: data.name, types: data.types, spriteUri: data.spriteUri},
     });
+    // Confirm the cross-module write with a toast. useToast resolves the host's ToastProvider
+    // (mounted in GluestackUIProvider) through the shared @pokedex/ui singleton, so this renders
+    // even though it's fired from the detail remote.
+    toast.show({
+      placement: 'top',
+      duration: 2000,
+      render: ({id: toastId}) => (
+        <Toast nativeID={`toast-${toastId}`} action="success" variant="solid">
+          <ToastTitle>Added to party</ToastTitle>
+          <ToastDescription>{data.name} joined your party.</ToastDescription>
+        </Toast>
+      ),
+    });
   };
 
   return (
     <ScreenContainer>
       <ScrollView showsVerticalScrollIndicator={false}>
-        <Box className={`items-center pt-4 pb-6 ${bgClassForType(primary)}`}>
-          <Image
-            source={{uri: data.spriteUri}}
-            alt={data.name}
-            size="2xl"
-            resizeMode="contain"
-          />
-          <Heading size="2xl" className="capitalize text-black">
-            {data.name}
-          </Heading>
-          <Text size="sm" bold className="text-black mt-0.5 mb-2">
-            #{String(data.id).padStart(3, '0')}
-          </Text>
-          <Box className="flex-row gap-2">
-            {data.types.map(t => (
-              <TypeBadge key={t} type={t} size="md" />
-            ))}
-          </Box>
-        </Box>
+        <VStack space="2xl">
+          <Center className={`py-8 ${bgClassForType(primary)}`}>
+            <VStack space="lg" className="items-center">
+              <Image
+                source={{uri: data.spriteUri}}
+                alt={data.name}
+                size="xl"
+                resizeMode="contain"
+              />
+              <VStack space="xs" className="items-center">
+                <Heading size="2xl" className="text-black">
+                  {data.name}
+                </Heading>
+                <Text size="sm" bold className="text-black">
+                  #{String(data.id).padStart(3, '0')}
+                </Text>
+              </VStack>
+              <HStack space="sm">
+                {data.types.map(t => (
+                  <TypeBadge key={t} type={t} size="md" />
+                ))}
+              </HStack>
+            </VStack>
+          </Center>
 
-        <Box className="px-5">
-          <Box className="mt-6">
-            <Heading size="lg" className="text-black mb-3">
-              Info
-            </Heading>
-            <InfoRow label="Height" value={`${data.heightMeters.toFixed(1)} m`} />
-            <InfoRow label="Weight" value={`${data.weightKg.toFixed(1)} kg`} />
-            <InfoRow label="Abilities" value={data.abilities.join(', ')} />
-          </Box>
+          <VStack space="4xl" className="px-5 pb-10">
+            <VStack space="md">
+              <Heading size="lg" className="text-black">
+                Info
+              </Heading>
+              <VStack>
+                <InfoRow label="Height" value={`${data.heightMeters.toFixed(1)} m`} />
+                <InfoRow label="Weight" value={`${data.weightKg.toFixed(1)} kg`} />
+                <InfoRow label="Abilities" value={data.abilities.join(', ')} />
+              </VStack>
+            </VStack>
 
-          <Box className="mt-6">
-            <Heading size="lg" className="text-black mb-3">
-              Base Stats
-            </Heading>
-            {data.stats.map(s => (
-              <StatBar key={s.name} label={STAT_LABELS[s.name] ?? s.name} value={s.value} colourType={primary} />
-            ))}
-          </Box>
+            <VStack space="md">
+              <Heading size="lg" className="text-black">
+                Base Stats
+              </Heading>
+              <VStack>
+                {data.stats.map(s => (
+                  <StatBar key={s.name} label={STAT_LABELS[s.name] ?? s.name} value={s.value} colourType={primary} />
+                ))}
+              </VStack>
+            </VStack>
 
-          <Button
-            onPress={onAddToParty}
-            isDisabled={isFull}
-            size="lg"
-            className="bg-navy rounded-xl mt-8 mb-6"
-            style={{alignSelf: 'stretch'}}
-          >
-            <ButtonText className="text-white">
-              {isFull ? 'Party Full' : 'Add to Party'}
-            </ButtonText>
-          </Button>
-        </Box>
+            {fromParty ? (
+              // Opened from the party tab: this Pokémon is already a member, so show a static
+              // indicator rather than offering to add it again.
+              <Box
+                className="bg-lightGreen rounded-xl items-center justify-center py-3.5"
+                style={{alignSelf: 'stretch'}}
+              >
+                <Text bold className="text-darkGreen">
+                  ✓ In your party
+                </Text>
+              </Box>
+            ) : (
+              <Button
+                onPress={onAddToParty}
+                isDisabled={isFull}
+                size="lg"
+                className="bg-navy rounded-xl"
+                style={{alignSelf: 'stretch'}}
+              >
+                <ButtonText className="text-white">
+                  {isFull ? 'Party Full' : 'Add to Party'}
+                </ButtonText>
+              </Button>
+            )}
+          </VStack>
+        </VStack>
       </ScrollView>
     </ScreenContainer>
   );
