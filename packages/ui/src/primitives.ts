@@ -13,6 +13,11 @@ export {Center} from './components/ui/center';
 export {Spinner} from './components/ui/spinner';
 export {Image} from './components/ui/image';
 export {SafeAreaView} from './components/ui/safe-area-view';
+
+// --- FlashList: the recycling list engine, re-exported so remotes consume it through the
+// design system rather than depending on @shopify/flash-list directly. Its native view is
+// compiled into the host and shared as a federation singleton; this re-export is the JS surface.
+export {FlashList, type FlashListProps} from '@shopify/flash-list';
 export {
   Button,
   ButtonText,
