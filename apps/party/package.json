@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "start:remote": "react-native start --config rspack.config.mjs --port 8083",
-    "bundle:ios": "react-native bundle --platform ios --entry-file index.js --bundle-output build/ios/partyApp.jsbundle --config rspack.config.mjs",
-    "bundle:ios:prod": "react-native bundle --platform ios --dev false --entry-file index.js --bundle-output build/ios/partyApp.jsbundle --config rspack.config.mjs",
+    "bundle:ios": "react-native bundle --platform ios --entry-file src/index.js --bundle-output build/ios/partyApp.jsbundle --config rspack.config.mjs",
+    "bundle:ios:prod": "react-native bundle --platform ios --dev false --entry-file src/index.js --bundle-output build/ios/partyApp.jsbundle --config rspack.config.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
