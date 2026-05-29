@@ -74,12 +74,18 @@ function registerCdnRemotes(versions: Record<string, string>): void {
 // MF runtime loads the remote entry through the host ScriptManager, and this resolver maps it to
 // the embedded file by name. VERIFIED: the container loads from the bundle offline.
 //
-// KNOWN LIMITATION: a remote's own chunks (especially shared/vendor chunks like nativewind's
-// jsx-runtime) load through the REMOTE's webpack runtime using the publicPath baked into it at
-// build time (the CDN), which bypasses the host ScriptManager entirely, so this resolver never
-// sees them and they fail offline (ChunkLoadError). True offline boot needs the remotes rebuilt
-// with filesystem-aware chunk loading (publicPath/ScriptManager), which is the open follow-up.
-// Until then the CDN path is the production path and this fallback only loads the container. ---
+// KNOWN LIMITATION (offline rendering not finished; CDN is the verified production path). The
+// resolver DOES fire and maps every chunk to its embedded file:// copy (verified by logging:
+// noop:///<chunk> -> file:///<chunk>), the file is present and loads, yet the remote's
+// shared/vendor chunks (e.g. nativewind's jsx-runtime) fail webpack chunk-registration offline.
+// Root cause: a container entry avoids the manifest fetch (RN can't fetch file://), but it also
+// means the MF runtime never sees the remote's shared-dependency config (which lives in the
+// manifest), so the remote falls back to loading its own copies of shared deps and their chunks
+// don't register against the expected runtime. A manifest entry would carry the shared config
+// but can't be fetched offline. Finishing this needs a remote-build change (eager-share on the
+// remotes so shared deps inline into the container, OR no code-splitting in remotes, OR making
+// the embedded manifest readable offline) and must not regress the CDN/dev paths. Until then
+// this fallback reliably loads the container only. ---
 let bundledResolverAdded = false;
 function addBundledResolver(): void {
   if (bundledResolverAdded) return;
