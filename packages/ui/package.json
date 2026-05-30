@@ -23,7 +23,8 @@
     "prepublishOnly": "npm run build",
     "typecheck": "tsc --noEmit",
     "test": "jest",
-    "accessibility-report": "jest --reporters=default --reporters=@pokedex/a11y-testing/reporter"
+    "accessibility-report": "jest --reporters=default --reporters=@pokedex/a11y-testing/reporter",
+    "lint": "eslint src --ext .ts,.tsx"
   },
   "publishConfig": {
     "registry": "http://localhost:4873/"
@@ -73,6 +74,7 @@
     "@gluestack-ui/utils": "^3.0.11",
     "@pokedex/a11y-testing": "^0.1.2",
     "@react-native/babel-preset": "^0.85.3",
+    "@react-native/eslint-config": "^0.85.3",
     "@react-native/jest-preset": "^0.85.3",
     "@shopify/flash-list": "^2.3.1",
     "@tailwindcss/container-queries": "^0.1.1",
@@ -81,8 +83,11 @@
     "@types/react": "^19.2.0",
     "@types/react-test-renderer": "^19.0.0",
     "babel-jest": "^29.6.3",
+    "eslint": "^8.57.1",
+    "eslint-plugin-react-native-a11y": "^3.5.1",
     "jest": "^29.6.3",
     "nativewind": "^4.1.23",
+    "prettier": "^2.8.8",
     "react": "19.2.3",
     "react-native": "0.85.3",
     "react-native-builder-bob": "^0.41.0",
