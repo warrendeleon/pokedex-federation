@@ -8,7 +8,11 @@ import {
 
 import ShellNavigationModule from '../../specs/NativeShellNavigationModule';
 
+import { resolveDeepLink } from './deepLink';
 import type { RootStackParamList } from './navigationTypes';
+
+// Re-exported so existing imports of resolveDeepLink from this module keep working.
+export { resolveDeepLink };
 
 // --- Host-side implementation of shell.navigateTo. Resolves a destination name against
 // ROUTE_REGISTRY and dispatches to either React Navigation (micro-app: a tab, or a root-stack
@@ -81,35 +85,6 @@ if (typeof ShellNavigationModule.onShellNavigate === 'function') {
 // link routes through the SAME shellNavigateHandler as everything else and can open an RN screen
 // or a native flow alike. It lives in the host (next to the router), not contracts, because the
 // host is the only thing that turns a URL into navigation; the remotes never see links. ---
-export function resolveDeepLink(
-  url: string,
-): { destination: string; params?: Record<string, unknown> } | null {
-  // Strip the scheme (pokedex://); for a universal link, also drop a leading "host.tld" segment.
-  let rest = url.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '');
-  const firstSlash = rest.indexOf('/');
-  const head = firstSlash === -1 ? rest : rest.slice(0, firstSlash);
-  if (head.includes('.')) {
-    rest = firstSlash === -1 ? '' : rest.slice(firstSlash + 1);
-  }
-  const [resource, value] = rest.split('/').filter(Boolean);
-  switch (resource) {
-    case 'pokemon':
-      return value
-        ? { destination: 'PokemonDetail', params: { id: Number(value) } }
-        : null;
-    case 'party':
-      return { destination: 'Party' };
-    case 'pokedex':
-      return { destination: 'Pokedex' };
-    case 'regions':
-      return { destination: 'Regions' };
-    case 'battle':
-      return { destination: 'QuickBattle' };
-    default:
-      return null;
-  }
-}
-
 function routeDeepLink(url: string): void {
   const resolved = resolveDeepLink(url);
   if (resolved) {

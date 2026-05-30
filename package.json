@@ -10,7 +10,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,cjs,mjs,json}\"",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,cjs,mjs,json}\"",
     "typecheck": "for d in packages/ui apps/host apps/list apps/party apps/regions apps/detail; do echo \"# typecheck $d\"; (cd \"$d\" && npx tsc --noEmit) || exit 1; done",
-    "test": "cd packages/ui && npm test"
+    "test": "(cd packages/ui && npm test) && (cd apps/host && npm test)"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^8.60.0",
