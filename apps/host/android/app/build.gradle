@@ -1,5 +1,6 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
+apply plugin: "org.jetbrains.kotlin.plugin.compose"
 apply plugin: "com.facebook.react"
 
 /**
@@ -86,6 +87,10 @@ android {
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
+    // Jetpack Compose, for the native Quick Battle screen (the SwiftUI counterpart on iOS).
+    buildFeatures {
+        compose true
+    }
     signingConfigs {
         debug {
             storeFile file('debug.keystore')
@@ -111,6 +116,14 @@ android {
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
+
+    // --- Jetpack Compose for the native Quick Battle screen (QuickBattleActivity). ---
+    def composeBom = platform("androidx.compose:compose-bom:2024.09.03")
+    implementation(composeBom)
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.foundation:foundation")
+    implementation("androidx.compose.material3:material3")
+    implementation("androidx.activity:activity-compose:1.9.3")
 
     // --- Accessibility instrumentation test stack. espresso-accessibility bundles Google's
     // Accessibility Test Framework (ATF): the Android counterpart to Apple's performAccessibilityAudit,

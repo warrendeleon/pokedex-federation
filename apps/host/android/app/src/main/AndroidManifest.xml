@@ -31,5 +31,11 @@
             <data android:scheme="pokedex" />
         </intent-filter>
       </activity>
+      <!-- The native Quick Battle screen (Jetpack Compose), launched for-result by
+           ShellNavigationModule.openNative. Not exported: it's only reachable in-process. -->
+      <activity
+        android:name=".QuickBattleActivity"
+        android:exported="false"
+        android:theme="@style/AppTheme" />
     </application>
 </manifest>
