@@ -22,7 +22,7 @@ function expectPair(
   });
 }
 
-describe('Token contrast (WCAG 2.1 AA)', () => {
+describe('WCAG 1.4.3 - Contrast (Minimum)', () => {
   describe('text on the white card surface', () => {
     it('black name text', () => expectPair(colours.black, colours.white, AA_NORMAL, 'black on white'));
     it('darkGrey label text', () =>
@@ -30,7 +30,7 @@ describe('Token contrast (WCAG 2.1 AA)', () => {
     // KNOWN AA FAILURE (tracked): midGrey on white is ~2.74:1, under the 4.5:1 floor. Used by the
     // card id labels and muted subtitles on light surfaces. it.failing keeps the suite honest and
     // green until the palette is fixed, at which point this marker must be removed.
-    it.failing('midGrey id / subtitle text', () =>
+    it.failing('midGrey id / subtitle text (known AA failure: ~2.74:1 < 4.5:1)', () =>
       expectPair(colours.midGrey, colours.white, AA_NORMAL, 'midGrey on white'));
   });
 

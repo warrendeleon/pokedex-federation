@@ -1,0 +1,61 @@
+// --- WCAG 2.1 Level A + AA success criteria (the set the European Accessibility Act references via
+// EN 301 549). Each is tagged with the layer of our composite that owns it:
+//   automated - asserted by a Jest a11y helper (this package)
+//   native    - the native a11y tree: Apple performAccessibilityAudit / Google ATF
+//   manual    - human judgement: VoiceOver/TalkBack release ritual
+//   n/a       - not applicable to this app (no audio/video, etc.)
+// The report renders pass/fail for `automated` criteria from the test run and lists the rest as
+// honestly out-of-scope-for-unit-tests, so the coverage map never overstates what Jest proves. ---
+
+module.exports = {
+  '1.1.1': {title: 'Non-text Content', level: 'A', layer: 'automated', note: 'image alt / decorative (quality is manual)'},
+  '1.2.1': {title: 'Audio-only and Video-only (Prerecorded)', level: 'A', layer: 'n/a', note: 'no media'},
+  '1.2.2': {title: 'Captions (Prerecorded)', level: 'A', layer: 'n/a', note: 'no media'},
+  '1.2.3': {title: 'Audio Description or Media Alternative', level: 'A', layer: 'n/a', note: 'no media'},
+  '1.2.4': {title: 'Captions (Live)', level: 'AA', layer: 'n/a', note: 'no media'},
+  '1.2.5': {title: 'Audio Description (Prerecorded)', level: 'AA', layer: 'n/a', note: 'no media'},
+  '1.3.1': {title: 'Info and Relationships', level: 'A', layer: 'automated', note: 'semantic roles (header, etc.)'},
+  '1.3.2': {title: 'Meaningful Sequence', level: 'A', layer: 'manual'},
+  '1.3.3': {title: 'Sensory Characteristics', level: 'A', layer: 'manual'},
+  '1.3.4': {title: 'Orientation', level: 'AA', layer: 'native'},
+  '1.3.5': {title: 'Identify Input Purpose', level: 'AA', layer: 'automated', note: 'textContentType / autoComplete'},
+  '1.4.1': {title: 'Use of Color', level: 'A', layer: 'automated', note: 'non-colour cue present (perception is manual)'},
+  '1.4.2': {title: 'Audio Control', level: 'A', layer: 'n/a', note: 'no audio'},
+  '1.4.3': {title: 'Contrast (Minimum)', level: 'AA', layer: 'automated', note: 'token matrix; rendered contrast is native'},
+  '1.4.4': {title: 'Resize Text', level: 'AA', layer: 'automated', note: 'allowFontScaling not disabled'},
+  '1.4.5': {title: 'Images of Text', level: 'AA', layer: 'manual'},
+  '1.4.10': {title: 'Reflow', level: 'AA', layer: 'native'},
+  '1.4.11': {title: 'Non-text Contrast', level: 'AA', layer: 'automated', note: 'UI/graphics 3:1 (rendered is native)'},
+  '1.4.12': {title: 'Text Spacing', level: 'AA', layer: 'native'},
+  '1.4.13': {title: 'Content on Hover or Focus', level: 'AA', layer: 'manual'},
+  '2.1.1': {title: 'Keyboard', level: 'A', layer: 'manual', note: 'external keyboard'},
+  '2.1.2': {title: 'No Keyboard Trap', level: 'A', layer: 'manual'},
+  '2.1.4': {title: 'Character Key Shortcuts', level: 'A', layer: 'n/a'},
+  '2.2.1': {title: 'Timing Adjustable', level: 'A', layer: 'manual'},
+  '2.2.2': {title: 'Pause, Stop, Hide', level: 'A', layer: 'manual'},
+  '2.3.1': {title: 'Three Flashes or Below Threshold', level: 'A', layer: 'manual'},
+  '2.4.1': {title: 'Bypass Blocks', level: 'A', layer: 'n/a', note: 'native nav, no page blocks'},
+  '2.4.2': {title: 'Page Titled', level: 'A', layer: 'manual', note: 'screen titles'},
+  '2.4.3': {title: 'Focus Order', level: 'A', layer: 'automated', note: 'focusable elements (real order is manual)'},
+  '2.4.4': {title: 'Link Purpose (In Context)', level: 'A', layer: 'automated', note: 'link has a name (clarity is manual)'},
+  '2.4.5': {title: 'Multiple Ways', level: 'AA', layer: 'manual'},
+  '2.4.6': {title: 'Headings and Labels', level: 'AA', layer: 'manual', note: 'descriptiveness is judgement'},
+  '2.4.7': {title: 'Focus Visible', level: 'AA', layer: 'native'},
+  '2.5.1': {title: 'Pointer Gestures', level: 'A', layer: 'manual'},
+  '2.5.2': {title: 'Pointer Cancellation', level: 'A', layer: 'manual'},
+  '2.5.3': {title: 'Label in Name', level: 'A', layer: 'automated', note: 'accessible name contains visible text'},
+  '2.5.4': {title: 'Motion Actuation', level: 'A', layer: 'n/a'},
+  '2.5.5': {title: 'Target Size', level: 'AAA', layer: 'automated', note: '44pt; AAA in 2.1 but EN 301 549 / platform required'},
+  '3.1.1': {title: 'Language of Page', level: 'A', layer: 'native', note: 'app language'},
+  '3.1.2': {title: 'Language of Parts', level: 'AA', layer: 'manual'},
+  '3.2.1': {title: 'On Focus', level: 'A', layer: 'manual'},
+  '3.2.2': {title: 'On Input', level: 'A', layer: 'manual'},
+  '3.2.3': {title: 'Consistent Navigation', level: 'AA', layer: 'manual'},
+  '3.2.4': {title: 'Consistent Identification', level: 'AA', layer: 'manual'},
+  '3.3.1': {title: 'Error Identification', level: 'A', layer: 'automated', note: 'errors announced + described'},
+  '3.3.2': {title: 'Labels or Instructions', level: 'A', layer: 'automated', note: 'inputs labelled'},
+  '3.3.3': {title: 'Error Suggestion', level: 'AA', layer: 'manual'},
+  '3.3.4': {title: 'Error Prevention (Legal, Financial, Data)', level: 'AA', layer: 'manual'},
+  '4.1.2': {title: 'Name, Role, Value', level: 'A', layer: 'automated', note: 'role + accessible name + state'},
+  '4.1.3': {title: 'Status Messages', level: 'AA', layer: 'automated', note: 'live region present + has content'},
+};

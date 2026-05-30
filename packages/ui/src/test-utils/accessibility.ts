@@ -210,3 +210,97 @@ export function expectScreenReaderAnnouncement(
     | undefined;
   expect(live).toBe(level);
 }
+
+// MARK: - 1.1.1 Non-text Content
+
+/** WCAG 1.1.1: an Image either exposes an accessible name, or is explicitly hidden from assistive
+ *  tech (decorative). An unlabelled, non-hidden image is a violation. */
+export function expectImageAccessible(element: TestElement): void {
+  const p = element.props;
+  const hidden =
+    p.accessibilityElementsHidden === true ||
+    p['aria-hidden'] === true ||
+    p.importantForAccessibility === 'no-hide-descendants' ||
+    p.accessibilityRole === 'none';
+  const named = Boolean(p.accessibilityLabel) || Boolean(p.alt);
+  expect(named || hidden).toBe(true);
+}
+
+// MARK: - 1.3.1 Info and Relationships
+
+/** WCAG 1.3.1: a heading carries the header role, so a screen reader can navigate by heading. */
+export function expectHeading(element: TestElement): void {
+  expect(element.props.accessibilityRole).toBe('header');
+}
+
+// MARK: - 1.3.5 Identify Input Purpose
+
+/** WCAG 1.3.5: an input collecting known user data declares its purpose (so autofill works). */
+export function expectInputPurpose(element: TestElement): void {
+  const purpose = (element.props.textContentType ?? element.props.autoComplete) as
+    | string
+    | undefined;
+  expect(purpose).toBeTruthy();
+  expect(purpose).not.toBe('none');
+  expect(purpose).not.toBe('off');
+}
+
+// MARK: - 1.4.1 Use of Colour
+
+/** WCAG 1.4.1: meaning isn't carried by colour alone; the element also exposes a name, a state, or
+ *  visible content a screen reader can convey. */
+export function expectNonColourCue(element: TestElement): void {
+  const p = element.props;
+  const hasCue =
+    Boolean(p.accessibilityLabel) || p.accessibilityState != null || p.children != null;
+  expect(hasCue).toBe(true);
+}
+
+// MARK: - 1.4.4 Resize Text
+
+/** WCAG 1.4.4: text scales with the user's font-size setting. Disabling allowFontScaling, or
+ *  capping maxFontSizeMultiplier too low, breaks dynamic type. */
+export function expectScalableText(element: TestElement, minMultiplier = 1.5): void {
+  const p = element.props;
+  expect(p.allowFontScaling).not.toBe(false);
+  if (typeof p.maxFontSizeMultiplier === 'number') {
+    expect(p.maxFontSizeMultiplier).toBeGreaterThanOrEqual(minMultiplier);
+  }
+}
+
+// MARK: - 2.5.3 Label in Name
+
+/** WCAG 2.5.3: the accessible name contains the visible label, so voice control ("tap <visible
+ *  text>") works. */
+export function expectLabelMatchesVisibleText(element: TestElement, visibleText: string): void {
+  const label = String(element.props.accessibilityLabel ?? '').toLowerCase();
+  expect(label).toContain(visibleText.trim().toLowerCase());
+}
+
+// MARK: - 3.3.2 Labels or Instructions
+
+/** WCAG 3.3.2: an input has a programmatic label (a placeholder is not a label). */
+export function expectFieldLabelled(element: TestElement): void {
+  expect(element.props.accessibilityLabel).toBeTruthy();
+}
+
+// MARK: - 3.3.1 Error Identification
+
+/** WCAG 3.3.1: an error is announced (alert role or assertive live region) and described in text,
+ *  not by colour alone. */
+export function expectErrorIdentified(element: TestElement): void {
+  const p = element.props;
+  const announced = p.accessibilityRole === 'alert' || p.accessibilityLiveRegion === 'assertive';
+  expect(announced).toBe(true);
+  expect(p.children ?? p.accessibilityLabel).toBeTruthy();
+}
+
+// MARK: - 4.1.3 Status Messages (content)
+
+/** WCAG 4.1.3: a live region actually contains content (an empty assertive region announces
+ *  nothing). */
+export function expectLiveRegionContent(element: TestElement): void {
+  const p = element.props;
+  expect(p.accessibilityLiveRegion ?? p['aria-live']).toBeTruthy();
+  expect(p.children ?? p.accessibilityLabel).toBeTruthy();
+}

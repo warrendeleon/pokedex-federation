@@ -22,7 +22,8 @@
     "build": "bob build",
     "prepublishOnly": "npm run build",
     "typecheck": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "accessibility-report": "jest --reporters=default --reporters=./accessibility/accessibility-reporter.js"
   },
   "publishConfig": {
     "registry": "http://localhost:4873/"
