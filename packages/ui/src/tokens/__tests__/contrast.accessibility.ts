@@ -1,5 +1,5 @@
 import {colours} from '../colours';
-import {calculateContrastRatio} from '../../test-utils/accessibility';
+import {calculateContrastRatio} from '@pokedex/a11y-testing';
 
 // --- WCAG 2.1 AA token-contrast matrix. A contrast ratio is a pair (text on surface), so we
 // enumerate the foreground/background pairs the design system actually sanctions and assert each.

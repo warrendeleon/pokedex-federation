@@ -23,7 +23,7 @@
     "prepublishOnly": "npm run build",
     "typecheck": "tsc --noEmit",
     "test": "jest",
-    "accessibility-report": "jest --reporters=default --reporters=./accessibility/accessibility-reporter.js"
+    "accessibility-report": "jest --reporters=default --reporters=@pokedex/a11y-testing/reporter"
   },
   "publishConfig": {
     "registry": "http://localhost:4873/"
@@ -71,6 +71,7 @@
     "@expo/html-elements": "^56.0.1",
     "@gluestack-ui/core": "^3.0.10",
     "@gluestack-ui/utils": "^3.0.11",
+    "@pokedex/a11y-testing": "^0.1.1",
     "@react-native/babel-preset": "^0.85.3",
     "@react-native/jest-preset": "^0.85.3",
     "@shopify/flash-list": "^2.3.1",
