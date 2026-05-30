@@ -9,12 +9,13 @@
 - **Criteria in scope:** 50 (Level A + AA, per EN 301 549)
 - **Automated coverage:** 10 / 10 applicable unit-testable criteria tested
 - **Violations (must fix):** 0
-- **Known / accepted findings (tracked):** 1
+- **Known / accepted findings (tracked):** 2
 - **Other layers:** 5 native-audit · 21 manual · 14 N/A
 
 ## ⚠️ Known / accepted findings
 
 - **1.4.3 Contrast (Minimum)** - midGrey id / subtitle text (known AA failure: ~2.74:1 < 4.5:1)
+- **1.4.11 Non-text Contrast** - stat-bar fill on the track (known: most type fills < 3:1; value shown as text)
 
 ## Coverage by success criterion
 
@@ -37,7 +38,7 @@
 | 1.4.4 | Resize Text <br/><sub>allowFontScaling not disabled</sub> | AA | Automated (Jest) | ✅ pass (1) |
 | 1.4.5 | Images of Text | AA | Manual | 👁 manual |
 | 1.4.10 | Reflow | AA | Native audit | 🔵 native audit |
-| 1.4.11 | Non-text Contrast <br/><sub>UI/graphics 3:1 (rendered is native)</sub> | AA | Automated (Jest) | ✅ pass (3) |
+| 1.4.11 | Non-text Contrast <br/><sub>UI/graphics 3:1 (rendered is native)</sub> | AA | Automated (Jest) | ⚠️ 1 known finding(s) |
 | 1.4.12 | Text Spacing | AA | Native audit | 🔵 native audit |
 | 1.4.13 | Content on Hover or Focus | AA | Manual | 👁 manual |
 | 2.1.1 | Keyboard <br/><sub>external keyboard</sub> | A | Manual | 👁 manual |

@@ -1,4 +1,5 @@
 import {colours} from '../colours';
+import {typeColours} from '../typeColours';
 import {calculateContrastRatio} from '@pokedex/a11y-testing';
 
 // --- WCAG 2.1 AA token-contrast matrix. A contrast ratio is a pair (text on surface), so we
@@ -64,4 +65,13 @@ describe('WCAG 1.4.11 - Non-text Contrast', () => {
     it('blue accent on navy', () =>
       expectPair(colours.blue, colours.navy, AA_LARGE, 'blue on navy'));
   });
+
+  // KNOWN finding (tracked): the stat-bar fill is a type colour drawn on the lightGrey track. Most
+  // type colours sit below the 3:1 non-text-contrast floor against that track (electric ~1.1:1,
+  // grass ~1.24:1; only the dark types clear it). Mitigated for now: every stat-bar prints its
+  // numeric value as text, so the magnitude is available without perceiving the bar's length. This
+  // is flagged for the design review / native audit; remove this marker once the track or the fill
+  // palette is darkened to clear 3:1.
+  it.failing('stat-bar fill on the track (known: most type fills < 3:1; value shown as text)', () =>
+    expectPair(typeColours.electric, colours.lightGrey, AA_LARGE, 'electric fill on lightGrey track'));
 });
