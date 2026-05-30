@@ -4,7 +4,6 @@
 // no-op on the host-provided Gluestack singletons (same fix as detail/regions).
 import '../global.css';
 import React from 'react';
-import {StyleSheet, Text as RNText, View} from 'react-native';
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {useDispatch, useSelector} from 'react-redux';
 import {
@@ -12,7 +11,9 @@ import {
   PokemonGrid,
   Box,
   Center,
+  Heading,
   Text,
+  VStack,
   Button,
   ButtonText,
   type PokemonGridEntry,
@@ -74,10 +75,14 @@ function PartyMainScreen() {
 
   return (
     <ScreenContainer variant="dark">
-      <View style={styles.header}>
-        <RNText style={styles.title}>My Party</RNText>
-        <RNText style={styles.subtitle}>{members.length} of 6 Pokémon ready</RNText>
-      </View>
+      <VStack space="xs" className="px-4 pt-2 pb-1">
+        <Heading size="2xl" className="text-white">
+          My Party
+        </Heading>
+        <Text size="sm" className="text-midGrey">
+          {members.length} of 6 Pokémon ready
+        </Text>
+      </VStack>
       <Box className="px-3 pb-2">
         <Button onPress={onQuickBattle} size="lg" className="bg-type-electric" isDisabled={members.length === 0}>
           <ButtonText className="text-black">Quick Battle</ButtonText>
@@ -108,12 +113,6 @@ function PartyMainScreen() {
     </ScreenContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  header: {paddingHorizontal: 16, paddingTop: 8, paddingBottom: 4},
-  title: {fontSize: 28, fontWeight: '700', color: '#FFFFFF'},
-  subtitle: {fontSize: 14, color: '#9A9AB0', marginTop: 2},
-});
 
 export function PartyStack() {
   return (
