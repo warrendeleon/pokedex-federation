@@ -46,8 +46,22 @@ describe('WCAG 1.4.3 - Contrast (Minimum)', () => {
       expectPair(colours.midGrey, colours.navy, AA_NORMAL, 'midGrey on navy'));
   });
 
-  describe('UI accents (3:1 boundary)', () => {
+});
+
+// --- 1.4.11 Non-text Contrast (AA, 3:1): UI component boundaries and meaningful graphics. The token
+// slice validates the design system's sanctioned accent colours against the surfaces they sit on.
+// Contrast as actually drawn per component (e.g. a stat-bar fill against its track) is the native
+// audit's job; where a graphic's value is also given as text, that text is the accessible cue. ---
+describe('WCAG 1.4.11 - Non-text Contrast', () => {
+  describe('accent on light surfaces (3:1 boundary)', () => {
     it('blue accent on white', () =>
       expectPair(colours.blue, colours.white, AA_LARGE, 'blue on white'));
+    it('red accent on white', () =>
+      expectPair(colours.red, colours.white, AA_LARGE, 'red on white'));
+  });
+
+  describe('accent on the navy (dark) surface', () => {
+    it('blue accent on navy', () =>
+      expectPair(colours.blue, colours.navy, AA_LARGE, 'blue on navy'));
   });
 });

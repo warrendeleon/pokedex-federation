@@ -21,6 +21,7 @@ import {
   LoadingState,
   ScreenContainer,
   StatBar,
+  StatusBanner,
   Text,
   TypeBadge,
   VStack,
@@ -193,15 +194,9 @@ export function PokemonDetailScreen({route}: Props) {
       </ScrollView>
 
       {justAdded ? (
-        // Sibling after the ScrollView so it paints on top; absolute so it overlays rather than
-        // shifting the layout. Auto-dismisses via the justAdded timer.
-        <Box className="absolute top-0 left-0 right-0 items-center pt-3 px-4">
-          <Box className="bg-pokemonGreen rounded-2xl px-5 py-3">
-            <Text bold className="text-black">
-              ✓ {data.name} added to your party
-            </Text>
-          </Box>
-        </Box>
+        // Sibling after the ScrollView so it paints on top. StatusBanner overlays rather than
+        // shifting layout and announces itself to a screen reader. Auto-dismisses via justAdded.
+        <StatusBanner message={`✓ ${data.name} added to your party`} />
       ) : null}
     </ScreenContainer>
   );

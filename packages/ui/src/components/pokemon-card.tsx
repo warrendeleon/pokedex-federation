@@ -39,17 +39,42 @@ export function PokemonCard({
 }: PokemonCardProps) {
   const primaryType = types[0] ?? 'normal';
   const tintBg = tintBgClassForType(primaryType);
-  const idLabel = `#${String(id).padStart(3, '0')}`;
+  const paddedId = String(id).padStart(3, '0');
+  const idLabel = `#${paddedId}`;
   const source: ImageSourcePropType | undefined =
     spriteSource ?? (spriteUri ? {uri: spriteUri} : undefined);
 
+  // The whole card is one accessible button, so a screen reader announces this name rather than
+  // the concatenated child text. Remove is a custom action on that same element, not a nested
+  // button: a Pressable sets accessible=true, which on iOS collapses its descendants, so a child
+  // button would be unreachable to VoiceOver. The visual ✕ stays for sighted users but is taken
+  // out of the a11y tree (the action covers screen-reader users) with a hitSlop-enlarged target.
+  const a11yLabel = `${name}, number ${paddedId}, ${types.join(' and ')} type`;
+
   return (
-    <Pressable onPress={onPress} className="active:opacity-80">
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={a11yLabel}
+      accessibilityHint={onPress ? 'Opens details' : undefined}
+      accessibilityActions={onRemove ? [{name: 'remove', label: 'Remove from party'}] : undefined}
+      onAccessibilityAction={
+        onRemove
+          ? event => {
+              if (event.nativeEvent.actionName === 'remove') onRemove();
+            }
+          : undefined
+      }
+      className="active:opacity-80"
+    >
       <Card className="bg-white rounded-2xl p-3 items-center">
         {onRemove ? (
           <Pressable
             onPress={onRemove}
-            accessibilityLabel={`Remove ${name} from party`}
+            accessible={false}
+            importantForAccessibility="no-hide-descendants"
+            accessibilityElementsHidden
+            hitSlop={10}
             className="absolute top-1.5 right-1.5 z-10 h-6 w-6 rounded-full bg-red items-center justify-center active:opacity-70"
           >
             <Text size="xs" bold className="text-white">

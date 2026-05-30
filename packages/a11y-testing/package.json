@@ -1,6 +1,6 @@
 {
   "name": "@pokedex/a11y-testing",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Drop-in WCAG 2.1 / EAA accessibility testing for React Native: Jest assertion helpers, a NativeWind-aware render, a WCAG criteria catalogue, and an accessibility-report generator. No paid scanner.",
   "source": "./src/index.ts",
   "main": "./lib/module/index.js",

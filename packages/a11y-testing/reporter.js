@@ -6,7 +6,28 @@
 
 const fs = require('fs');
 const path = require('path');
-const CRITERIA = require('./wcag-criteria');
+const BASE_CRITERIA = require('./wcag-criteria');
+
+// --- Per-app overrides. A criterion's true disposition is app-specific: an app with no text
+// inputs genuinely can't satisfy 1.3.5 / 3.3.1 / 3.3.2, so it marks them n/a-with-reason here
+// rather than leaving them as "not yet tested" (a gap that can never close) or faking a form to
+// tick them. The generic catalogue stays untouched so an app that does have forms keeps them
+// automated. Drop an `a11y-report.config.js` in the project root: { projectName, overrides }. ---
+function loadConfig() {
+  const p = path.resolve(process.cwd(), 'a11y-report.config.js');
+  if (!fs.existsSync(p)) return {projectName: 'this app', overrides: {}};
+  // eslint-disable-next-line global-require, import/no-dynamic-require
+  const cfg = require(p);
+  return {projectName: cfg.projectName || 'this app', overrides: cfg.overrides || {}};
+}
+
+function mergeCriteria(overrides) {
+  const merged = {};
+  for (const [sc, m] of Object.entries(BASE_CRITERIA)) {
+    merged[sc] = overrides[sc] ? {...m, ...overrides[sc]} : m;
+  }
+  return merged;
+}
 
 const SC_RE = /WCAG\s+(\d+\.\d+\.\d+)/;
 const LAYER_LABEL = {
@@ -38,8 +59,7 @@ function cleanMessage(failureMessages) {
     .join(' / ');
 }
 
-function statusFor(sc, bucket) {
-  const meta = CRITERIA[sc];
+function statusFor(meta, bucket) {
   if (meta && meta.layer !== 'automated') return null; // owned by another layer
   if (!bucket) return {icon: '◻️', label: 'not yet tested'};
   if (bucket.fail > 0) return {icon: '❌', label: `${bucket.fail} violation(s)`};
@@ -47,7 +67,7 @@ function statusFor(sc, bucket) {
   return {icon: '✅', label: `pass (${bucket.pass})`};
 }
 
-function render(bySc, when) {
+function render(bySc, when, CRITERIA, projectName) {
   const entries = Object.entries(CRITERIA);
   const automated = entries.filter(([, m]) => m.layer === 'automated');
   const tested = automated.filter(([sc]) => bySc[sc]);
@@ -63,7 +83,7 @@ function render(bySc, when) {
   const lines = [];
   lines.push('# Accessibility Report - EAA / WCAG 2.1 (A & AA)');
   lines.push('');
-  lines.push(`> Generated ${when} from the @pokedex/ui accessibility test suite. The European`);
+  lines.push(`> Generated ${when} from the ${projectName} accessibility test suite. The European`);
   lines.push('> Accessibility Act (Directive 2019/882) has mandated WCAG 2.1 AA for EU-distributed');
   lines.push('> apps since 28 June 2025.');
   lines.push('');
@@ -71,7 +91,7 @@ function render(bySc, when) {
   lines.push('');
   lines.push(`- **Criteria in scope:** ${entries.length} (Level A + AA, per EN 301 549)`);
   lines.push(
-    `- **Automated coverage:** ${tested.length} / ${automated.length} unit-testable criteria have tests`,
+    `- **Automated coverage:** ${tested.length} / ${automated.length} applicable unit-testable criteria tested`,
   );
   lines.push(`- **Violations (must fix):** ${violations.length}`);
   lines.push(`- **Known / accepted findings (tracked):** ${known.length}`);
@@ -106,7 +126,7 @@ function render(bySc, when) {
   lines.push('| SC | Criterion | Level | Owned by | Status |');
   lines.push('|---|---|---|---|---|');
   for (const [sc, m] of entries) {
-    const auto = statusFor(sc, bySc[sc]);
+    const auto = statusFor(m, bySc[sc]);
     let status;
     if (m.layer === 'automated') {
       status = auto ? `${auto.icon} ${auto.label}` : '◻️ not yet tested';
@@ -153,8 +173,10 @@ class AccessibilityReporter {
         }
       }
     }
+    const {projectName, overrides} = loadConfig();
+    const CRITERIA = mergeCriteria(overrides);
     const when = new Date().toISOString().slice(0, 10);
-    const md = render(bySc, when);
+    const md = render(bySc, when, CRITERIA, projectName);
     const out = path.resolve(process.cwd(), 'accessibility-report.md');
     fs.writeFileSync(out, md);
     // eslint-disable-next-line no-console

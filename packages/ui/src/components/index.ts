@@ -6,3 +6,4 @@ export * from './stat-bar';
 export * from './info-row';
 export * from './loading-state';
 export * from './error-state';
+export * from './status-banner';

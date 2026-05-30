@@ -45,7 +45,6 @@ module.exports = {
   '2.5.2': {title: 'Pointer Cancellation', level: 'A', layer: 'manual'},
   '2.5.3': {title: 'Label in Name', level: 'A', layer: 'automated', note: 'accessible name contains visible text'},
   '2.5.4': {title: 'Motion Actuation', level: 'A', layer: 'n/a'},
-  '2.5.5': {title: 'Target Size', level: 'AAA', layer: 'automated', note: '44pt; AAA in 2.1 but EN 301 549 / platform required'},
   '3.1.1': {title: 'Language of Page', level: 'A', layer: 'native', note: 'app language'},
   '3.1.2': {title: 'Language of Parts', level: 'AA', layer: 'manual'},
   '3.2.1': {title: 'On Focus', level: 'A', layer: 'manual'},
@@ -56,6 +55,7 @@ module.exports = {
   '3.3.2': {title: 'Labels or Instructions', level: 'A', layer: 'automated', note: 'inputs labelled'},
   '3.3.3': {title: 'Error Suggestion', level: 'AA', layer: 'manual'},
   '3.3.4': {title: 'Error Prevention (Legal, Financial, Data)', level: 'AA', layer: 'manual'},
+  '4.1.1': {title: 'Parsing', level: 'A', layer: 'n/a', note: 'no markup to parse on native; removed in WCAG 2.2'},
   '4.1.2': {title: 'Name, Role, Value', level: 'A', layer: 'automated', note: 'role + accessible name + state'},
   '4.1.3': {title: 'Status Messages', level: 'AA', layer: 'automated', note: 'live region present + has content'},
 };
