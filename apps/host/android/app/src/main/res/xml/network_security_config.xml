@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Demo only. The local stand-in CDN (tools/build-cdn.mjs) is served over http on the dev machine,
+     reached from the emulator at 10.0.2.2 (or localhost via `adb reverse`). A release build blocks
+     cleartext by default, so this permits it for the loopback/emulator hosts ONLY. Production CDNs
+     use https, where this exception does nothing. -->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
+</network-security-config>

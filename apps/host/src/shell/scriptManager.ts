@@ -3,6 +3,8 @@ import { ScriptManager } from '@callstack/repack/client';
 import type { ModuleFederationRuntimePlugin } from '@module-federation/runtime';
 import { registerPlugins, registerRemotes } from '@module-federation/runtime';
 
+import NativeEmbeddedRemotes from '../../specs/NativeEmbeddedRemotesModule';
+
 import { BUNDLED_VERSIONS, EMBEDDED_MANIFESTS } from './embedded-manifests';
 import {
   embeddedManifestRemote,
@@ -39,6 +41,12 @@ const APP_PATH =
   SCRIPT_URL && SCRIPT_URL.startsWith('file://')
     ? SCRIPT_URL.replace(/^file:\/\//, '').replace(/\/[^/]+\.jsbundle$/, '')
     : undefined;
+
+// --- Root directory the resolver builds absolute file:// URLs for embedded remotes against. On
+// iOS it is the .app dir derived from scriptURL above. On Android the embedded bundles live in the
+// APK assets (not a real path), so the native EmbeddedRemotesModule extracts them to the files dir
+// and initializeFederation sets this to that dir before any load fires. ---
+let embeddedRoot: string | undefined = APP_PATH;
 
 // --- Persistent script cache: PROD only. In PROD a fetched container survives restarts; in DEV
 // it would mask remote edits (the dev server is the single source of truth each launch). ---
@@ -257,7 +265,7 @@ ScriptManager.shared.addResolver(
       bundledVersions: BUNDLED_VERSIONS[Platform.OS] ?? {},
       fallbackRemotes: bundledFallbackRemotes,
       platform: Platform.OS,
-      appPath: APP_PATH,
+      appPath: embeddedRoot,
       cdnBase: PROD_CDN_BASE,
       verify: VERIFY_SIGNATURE,
     }),
@@ -326,6 +334,18 @@ export async function initializeFederation(): Promise<{
   if (__DEV__ && !CDN_CONFIGURED) {
     status = { mode: 'dev', source: 'Re.Pack dev servers', versions: {} };
     return { mode: status.mode };
+  }
+
+  // Android: extract the APK-embedded remotes to a real dir before any load can fire, so both the
+  // offline (bundled) path and the per-remote backstop have a file:// root to resolve against. iOS
+  // already has embeddedRoot from scriptURL. Best-effort: if it fails, embeddedRoot stays undefined
+  // and the resolver simply can't serve embedded (same as having no fallback).
+  if (Platform.OS === 'android' && NativeEmbeddedRemotes) {
+    try {
+      embeddedRoot = await NativeEmbeddedRemotes.prepare(APP_VERSION);
+    } catch (e) {
+      console.warn('[federation] embedded remote extraction failed:', e);
+    }
   }
 
   const cdnVersions = await fetchVersionMap();

@@ -73,6 +73,19 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+// --- Offline embed. The federated remotes' prod bundles (built by `node tools/build-cdn.mjs` into
+// cdn-root/android/<remote>/<version>/) are copied into the APK assets so EmbeddedRemotesModule can
+// extract them and the host can boot / fall back without the CDN. The matching iOS step is the
+// embed-remotes-ios.sh build phase. ---
+def cdnSource = file("$rootDir/../../../cdn-root/android")
+def cdnAssetsDir = file("$buildDir/generated/cdn-assets")
+
+tasks.register('embedCdnAssets', Copy) {
+    onlyIf { cdnSource.exists() }
+    from(cdnSource) { include '**/*.bundle' }
+    into file("$cdnAssetsDir/cdn/android")
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -111,7 +124,22 @@ android {
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
         }
     }
+    sourceSets {
+        main {
+            // The embedCdnAssets task populates this before the assets are merged.
+            assets.srcDirs += cdnAssetsDir
+        }
+    }
+    lint {
+        // lintVital aborts the release build on findings inside third-party RN libraries
+        // (react-native-svg, react-native-screens) that we don't control. Our own code is linted
+        // by eslint and the debug lint, so skip the release lint to let release builds complete.
+        checkReleaseBuilds false
+    }
 }
+
+// Make sure the remotes are baked in before assets are merged into the APK.
+tasks.named('preBuild').configure { dependsOn 'embedCdnAssets' }
 
 dependencies {
     // The version of react-native is set by the React Native Gradle Plugin

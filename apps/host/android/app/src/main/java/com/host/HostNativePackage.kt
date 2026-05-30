@@ -5,6 +5,7 @@ import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.module.model.ReactModuleInfo
 import com.facebook.react.module.model.ReactModuleInfoProvider
+import com.host.specs.NativeEmbeddedRemotesModuleSpec
 import com.host.specs.NativeShellNavigationModuleSpec
 import com.host.specs.NativeStoreObserverModuleSpec
 
@@ -16,6 +17,7 @@ class HostNativePackage : BaseReactPackage() {
     when (name) {
       NativeShellNavigationModuleSpec.NAME -> ShellNavigationModule(reactContext)
       NativeStoreObserverModuleSpec.NAME -> StoreObserverModule(reactContext)
+      NativeEmbeddedRemotesModuleSpec.NAME -> EmbeddedRemotesModule(reactContext)
       else -> null
     }
 
@@ -35,6 +37,15 @@ class HostNativePackage : BaseReactPackage() {
           ReactModuleInfo(
             NativeStoreObserverModuleSpec.NAME,
             StoreObserverModule::class.java.name,
+            false,
+            false,
+            false,
+            true,
+          ),
+        NativeEmbeddedRemotesModuleSpec.NAME to
+          ReactModuleInfo(
+            NativeEmbeddedRemotesModuleSpec.NAME,
+            EmbeddedRemotesModule::class.java.name,
             false,
             false,
             false,
