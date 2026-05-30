@@ -22,5 +22,5 @@ module.exports = {
   // The vendored Gluestack primitives (components/ui/**) and test utilities are not our authored
   // component surface; they carry their own lint directives for plugins this focused config does not
   // load. Lint the components we write.
-  ignorePatterns: ['lib/', 'node_modules/', 'src/components/ui/', 'src/test-utils/', '**/__tests__/', '**/*.web.tsx'],
+  ignorePatterns: ['lib/', 'node_modules/', 'src/components/ui/', 'src/test-utils/', '**/__tests__/'],
 };
