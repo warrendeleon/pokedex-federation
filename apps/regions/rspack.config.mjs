@@ -1,10 +1,10 @@
 import path from 'node:path';
-import {fileURLToPath} from 'node:url';
+import { fileURLToPath } from 'node:url';
 import * as Repack from '@callstack/repack';
 import rspack from '@rspack/core';
-import {NativeWindPlugin} from '@callstack/repack-plugin-nativewind';
-import {getMFShared} from '../../mf-shared.mjs';
-import pkg from './package.json' with {type: 'json'};
+import { NativeWindPlugin } from '@callstack/repack-plugin-nativewind';
+import { getMFShared } from '../../mf-shared.mjs';
+import pkg from './package.json' with { type: 'json' };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -18,14 +18,14 @@ const REMOTE_VERSION = process.env.MF_REMOTE_VERSION || '0.0.1';
 // featured Pokémon routes to detailApp). Shared deps are lazy (eager:false) so the remote
 // consumes the host's singleton instances rather than bundling its own. ---
 export default Repack.defineRspackConfig(env => {
-  const {mode, platform} = env;
+  const { mode, platform } = env;
 
   return {
     mode,
     context: __dirname,
     entry: './src/index.js',
     resolve: {
-      ...Repack.getResolveOptions({enablePackageExports: true}),
+      ...Repack.getResolveOptions({ enablePackageExports: true }),
     },
     output: {
       // Output structure mirrors the CDN URL layout cdn/<platform>/<remote>/<version>/.
@@ -43,7 +43,7 @@ export default Repack.defineRspackConfig(env => {
             options: {},
           },
         },
-        ...Repack.getAssetTransformRules({inline: true}),
+        ...Repack.getAssetTransformRules({ inline: true }),
       ],
     },
     plugins: [
@@ -66,7 +66,7 @@ export default Repack.defineRspackConfig(env => {
         shared: getMFShared('remote', pkg),
       }),
       new NativeWindPlugin(),
-      new rspack.IgnorePlugin({resourceRegExp: /^@react-native-masked-view/}),
+      new rspack.IgnorePlugin({ resourceRegExp: /^@react-native-masked-view/ }),
       new rspack.DefinePlugin({
         __REMOTE_VERSION__: JSON.stringify(REMOTE_VERSION),
       }),

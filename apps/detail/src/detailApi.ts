@@ -1,4 +1,4 @@
-import {artworkUri, baseApi, type PokemonDetailData} from '@pokedex/contracts';
+import { artworkUri, baseApi, type PokemonDetailData } from '@pokedex/contracts';
 
 // --- detailApp injects its endpoint into the host's shared baseApi. Because the list already
 // populated the shared cache, navigating to a Pokémon the list loaded is instant (RTK Query
@@ -9,16 +9,16 @@ const detailApi = baseApi.injectEndpoints({
     getPokemonDetail: build.query<PokemonDetailData, number>({
       async queryFn(id, _api, _extra, baseQuery) {
         const res = await baseQuery(`pokemon/${id}`);
-        if (res.error) return {error: res.error};
+        if (res.error) return { error: res.error };
         // Optional arrays guarded: a malformed 200 from PokéAPI shouldn't throw inside the queryFn.
         const p = res.data as {
           id: number;
           name: string;
           height: number;
           weight: number;
-          types?: {type: {name: string}}[];
-          stats?: {base_stat: number; stat: {name: string}}[];
-          abilities?: {ability: {name: string}}[];
+          types?: { type: { name: string } }[];
+          stats?: { base_stat: number; stat: { name: string } }[];
+          abilities?: { ability: { name: string } }[];
         };
         const name = p.name
           .split('-')
@@ -33,13 +33,13 @@ const detailApi = baseApi.injectEndpoints({
             heightMeters: p.height / 10,
             weightKg: p.weight / 10,
             abilities: (p.abilities ?? []).map(a => a.ability.name),
-            stats: (p.stats ?? []).map(s => ({name: s.stat.name, value: s.base_stat})),
+            stats: (p.stats ?? []).map(s => ({ name: s.stat.name, value: s.base_stat })),
           },
         };
       },
-      providesTags: (_result, _error, id) => [{type: 'Pokemon', id}],
+      providesTags: (_result, _error, id) => [{ type: 'Pokemon', id }],
     }),
   }),
 });
 
-export const {useGetPokemonDetailQuery} = detailApi;
+export const { useGetPokemonDetailQuery } = detailApi;

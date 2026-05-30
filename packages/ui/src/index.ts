@@ -17,4 +17,4 @@ export * from './tokens';
 // (where the CLI puts it, after we relocated `components/` under src/ so react-native-builder-bob
 // builds the lot in one pass). The re-export keeps the import surface stable even if we relocate
 // it again later. ---
-export {GluestackUIProvider} from './components/ui/gluestack-ui-provider';
+export { GluestackUIProvider } from './components/ui/gluestack-ui-provider';

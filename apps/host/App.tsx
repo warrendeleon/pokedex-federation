@@ -1,20 +1,22 @@
-import React, {useEffect, useState} from 'react';
-import {ActivityIndicator, View} from 'react-native';
-import {Provider} from 'react-redux';
-import {PersistGate} from 'redux-persist/integration/react';
-import {NavigationContainer} from '@react-navigation/native';
-import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {GluestackUIProvider} from '@pokedex/ui';
-import {registerShellNavigateHandler} from '@pokedex/contracts';
-import {store, persistor} from './src/shell/store';
-import {AppNavigator} from './src/shell/AppNavigator';
-import {initializeFederation} from './src/shell/scriptManager';
-import {FederationBanner} from './src/shell/FederationBanner';
+import React, { useEffect, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Provider } from 'react-redux';
+import { NavigationContainer } from '@react-navigation/native';
+import { PersistGate } from 'redux-persist/integration/react';
+
+import { registerShellNavigateHandler } from '@pokedex/contracts';
+import { GluestackUIProvider } from '@pokedex/ui';
+
+import { AppNavigator } from './src/shell/AppNavigator';
+import { FederationBanner } from './src/shell/FederationBanner';
+import { initializeFederation } from './src/shell/scriptManager';
 import {
   navigationRef,
-  shellNavigateHandler,
   processInitialDeepLink,
+  shellNavigateHandler,
 } from './src/shell/shellNavigation';
+import { persistor, store } from './src/shell/store';
 
 // --- Wire the shell.navigateTo bridge once at module load, before any remote can call it.
 // Federated remotes import shellNavigate from @pokedex/contracts; it proxies through globalThis
@@ -39,13 +41,16 @@ export default function App() {
           <SafeAreaProvider>
             {ready ? (
               <>
-                <NavigationContainer ref={navigationRef} onReady={processInitialDeepLink}>
+                <NavigationContainer
+                  ref={navigationRef}
+                  onReady={processInitialDeepLink}
+                >
                   <AppNavigator />
                 </NavigationContainer>
                 <FederationBanner />
               </>
             ) : (
-              <View style={{flex: 1, justifyContent: 'center'}}>
+              <View style={{ flex: 1, justifyContent: 'center' }}>
                 <ActivityIndicator />
               </View>
             )}

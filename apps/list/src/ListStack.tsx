@@ -5,20 +5,14 @@
 import '../global.css';
 
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
-import {useSelector} from 'react-redux';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import { StyleSheet, Text, View } from 'react-native';
+import { useSelector } from 'react-redux';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import {shellNavigate} from '@pokedex/contracts';
-import {
-  Box,
-  ErrorState,
-  LoadingState,
-  PokemonGrid,
-  ScreenContainer,
-} from '@pokedex/ui';
+import { shellNavigate } from '@pokedex/contracts';
+import { Box, ErrorState, LoadingState, PokemonGrid, ScreenContainer } from '@pokedex/ui';
 
-import {useGetPokemonListInfiniteQuery} from './listApi';
+import { useGetPokemonListInfiniteQuery } from './listApi';
 
 // --- listApp's exposed navigation stack: the Pokédex grid, loaded into the host's tab via Module
 // Federation. It composes the shared @pokedex/ui design system (FlashList-backed PokemonGrid),
@@ -30,13 +24,13 @@ import {useGetPokemonListInfiniteQuery} from './listApi';
 const Stack = createNativeStackNavigator();
 
 interface PartySliceShape {
-  party?: {members: {id: number}[]};
+  party?: { members: { id: number }[] };
 }
 const MAX_PARTY = 6;
 
 function ListMainScreen() {
   const partyCount = useSelector((s: PartySliceShape) => s.party?.members.length ?? 0);
-  const {data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage} =
+  const { data, isLoading, isError, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
     useGetPokemonListInfiniteQuery();
   // RTK Query keeps each fetched page; flatten them into the single list FlashList renders.
   const pokemon = data?.pages.flat() ?? [];
@@ -65,7 +59,7 @@ function ListMainScreen() {
           <PokemonGrid
             data={pokemon}
             numColumns={3}
-            onPressItem={entry => shellNavigate('PokemonDetail', {id: entry.id})}
+            onPressItem={entry => shellNavigate('PokemonDetail', { id: entry.id })}
             onEndReached={onEndReached}
             isFetchingNextPage={isFetchingNextPage}
           />
@@ -83,15 +77,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 8,
   },
-  title: {fontSize: 28, fontWeight: '700', color: '#2E3138'},
-  partyCount: {fontSize: 16, fontWeight: '600', color: '#3A86FF'},
-  subtitle: {fontSize: 14, color: '#515151', paddingHorizontal: 16, marginTop: 2, marginBottom: 10},
+  title: { fontSize: 28, fontWeight: '700', color: '#2E3138' },
+  partyCount: { fontSize: 16, fontWeight: '600', color: '#3A86FF' },
+  subtitle: {
+    fontSize: 14,
+    color: '#515151',
+    paddingHorizontal: 16,
+    marginTop: 2,
+    marginBottom: 10,
+  },
 });
 
 export function ListStack() {
   return (
     <Stack.Navigator>
-      <Stack.Screen name="ListMain" component={ListMainScreen} options={{headerShown: false}} />
+      <Stack.Screen name="ListMain" component={ListMainScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }

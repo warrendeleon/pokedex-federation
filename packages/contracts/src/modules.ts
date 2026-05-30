@@ -3,10 +3,10 @@
 // here; this file is what every other module imports from to avoid hardcoded strings. ---
 
 export const MODULES = {
-  list:    'list',
-  party:   'party',
+  list: 'list',
+  party: 'party',
   regions: 'regions',
-  detail:  'detail',
+  detail: 'detail',
 } as const;
 
 export type ModuleId = (typeof MODULES)[keyof typeof MODULES];

@@ -1,7 +1,7 @@
 import React from 'react';
 
-import {Box} from './ui/box';
-import {Text} from './ui/text';
+import { Box } from './ui/box';
+import { Text } from './ui/text';
 
 // --- A label/value row with a hairline divider, for the detail screen's Info section
 // (Height / Weight / Abilities). In the design system so its divider + text token classes are
@@ -12,9 +12,9 @@ export interface InfoRowProps {
   value: string;
 }
 
-export function InfoRow({label, value}: InfoRowProps) {
+export function InfoRow({ label, value }: InfoRowProps) {
   return (
-    <Box className="flex-row justify-between py-3.5 border-b border-lightGrey">
+    <Box className="flex-row justify-between border-b border-lightGrey py-3.5">
       <Text size="sm" className="text-darkGrey">
         {label}
       </Text>

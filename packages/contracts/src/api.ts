@@ -1,4 +1,4 @@
-import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
+import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react';
 
 // --- The single RTK Query API instance for the whole federation, and the reason it lives in the
 // shared @pokedex/contracts package rather than the host: a federated remote can only add its
@@ -11,7 +11,7 @@ import {createApi, fetchBaseQuery} from '@reduxjs/toolkit/query/react';
 
 export const baseApi = createApi({
   reducerPath: 'api',
-  baseQuery: fetchBaseQuery({baseUrl: 'https://pokeapi.co/api/v2/'}),
+  baseQuery: fetchBaseQuery({ baseUrl: 'https://pokeapi.co/api/v2/' }),
   tagTypes: ['Pokemon', 'PokemonList', 'Region'],
   endpoints: () => ({}),
 });

@@ -1,9 +1,9 @@
 import React from 'react';
 
-import {bgClassForType} from '../tokens/typeColours';
+import { bgClassForType } from '../tokens/typeColours';
 
-import {Box} from './ui/box';
-import {Text} from './ui/text';
+import { Box } from './ui/box';
+import { Text } from './ui/text';
 
 // --- A single base-stat row: label, a track with a type-coloured fill proportional to the value,
 // and the value. Lives in the design system (not the detail remote) so its token classes are
@@ -26,7 +26,7 @@ export interface StatBarProps {
   max?: number;
 }
 
-export function StatBar({label, value, colourType, max = 200}: StatBarProps) {
+export function StatBar({ label, value, colourType, max = 200 }: StatBarProps) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
   return (
     // One accessible element so a screen reader announces "Attack, 49" as a value, not three
@@ -38,15 +38,18 @@ export function StatBar({label, value, colourType, max = 200}: StatBarProps) {
       accessible
       accessibilityRole="progressbar"
       accessibilityLabel={label}
-      accessibilityValue={{text: String(value)}}
+      accessibilityValue={{ text: String(value) }}
     >
-      <Text size="sm" className="text-darkGrey w-[72px]">
+      <Text size="sm" className="w-[72px] text-darkGrey">
         {label}
       </Text>
-      <Box className="flex-1 h-2 rounded-full bg-lightGrey overflow-hidden mx-3">
-        <Box className={`h-full rounded-full ${bgClassForType(colourType)}`} style={{width: `${pct}%`}} />
+      <Box className="mx-3 h-2 flex-1 overflow-hidden rounded-full bg-lightGrey">
+        <Box
+          className={`h-full rounded-full ${bgClassForType(colourType)}`}
+          style={{ width: `${pct}%` }}
+        />
       </Box>
-      <Text size="sm" bold className="text-black w-8 text-right">
+      <Text size="sm" bold className="w-8 text-right text-black">
         {value}
       </Text>
     </Box>

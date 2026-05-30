@@ -1,9 +1,9 @@
 import React from 'react';
-import {ActivityIndicator} from 'react-native';
-import {FlashList} from '@shopify/flash-list';
+import { ActivityIndicator } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 
-import {Box} from './ui/box';
-import {PokemonCard} from './pokemon-card';
+import { Box } from './ui/box';
+import { PokemonCard } from './pokemon-card';
 
 // --- The Pokédex / Party card grid. Built on FlashList rather than a ScrollView: it recycles
 // rows and only renders what's on screen, so it scales to the full Pokédex (1000+ entries)
@@ -63,7 +63,7 @@ export function PokemonGrid({
           </Box>
         ) : null
       }
-      renderItem={({item}) => (
+      renderItem={({ item }) => (
         <Box className="p-1.5">
           <PokemonCard
             id={item.id}

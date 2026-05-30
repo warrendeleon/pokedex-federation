@@ -5,8 +5,10 @@
   "description": "Repo-level dev tooling only: husky hooks, lint-staged, and a repo-wide accessibility lint. The apps and packages are otherwise standalone (no workspaces); each builds and publishes on its own.",
   "scripts": {
     "prepare": "husky",
-    "lint": "eslint --no-eslintrc --config .eslintrc.js --ext .ts,.tsx packages/*/src apps/*/src",
+    "lint": "eslint --no-eslintrc --config .eslintrc.js --ext .ts,.tsx packages apps",
     "lint:fix": "npm run lint -- --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,cjs,mjs,json}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,cjs,mjs,json}\"",
     "typecheck": "for d in packages/ui apps/host apps/list apps/party apps/regions apps/detail; do echo \"# typecheck $d\"; (cd \"$d\" && npx tsc --noEmit) || exit 1; done",
     "test": "cd packages/ui && npm test"
   },

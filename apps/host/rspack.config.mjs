@@ -1,10 +1,10 @@
 import path from 'node:path';
-import {fileURLToPath} from 'node:url';
+import { fileURLToPath } from 'node:url';
 import * as Repack from '@callstack/repack';
 import rspack from '@rspack/core';
-import {NativeWindPlugin} from '@callstack/repack-plugin-nativewind';
-import {getMFShared} from '../../mf-shared.mjs';
-import pkg from './package.json' with {type: 'json'};
+import { NativeWindPlugin } from '@callstack/repack-plugin-nativewind';
+import { getMFShared } from '../../mf-shared.mjs';
+import pkg from './package.json' with { type: 'json' };
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -13,10 +13,10 @@ const __dirname = path.dirname(__filename);
 // URLs. Both shapes are name@url so Re.Pack's MF V2 plugin can consume them; the runtime
 // version-resolution probe (scriptManager.ts) re-registers them with versioned paths at boot. ---
 const DEV_REMOTES = {
-  listApp:    'http://localhost:8082',
-  partyApp:   'http://localhost:8083',
+  listApp: 'http://localhost:8082',
+  partyApp: 'http://localhost:8083',
   regionsApp: 'http://localhost:8084',
-  detailApp:  'http://localhost:8085',
+  detailApp: 'http://localhost:8085',
 };
 
 // --- Production CDN base, injected via DefinePlugin so scriptManager.ts and the manifest URLs
@@ -28,7 +28,7 @@ const PROD_CDN_BASE = process.env.MF_CDN_BASE || 'https://cdn.example.com/mf';
 // --- Function-style config so env.platform and env.mode are available. Mirrors
 // @callstack/repack's tester-federation-v2 host-app pattern. ---
 export default Repack.defineRspackConfig(env => {
-  const {mode, platform} = env;
+  const { mode, platform } = env;
   const isProd = mode === 'production';
 
   const remoteUrl = name =>
@@ -53,7 +53,7 @@ export default Repack.defineRspackConfig(env => {
       usedExports: false,
     },
     resolve: {
-      ...Repack.getResolveOptions({enablePackageExports: true}),
+      ...Repack.getResolveOptions({ enablePackageExports: true }),
     },
     output: {
       path: '[context]/build/host/[platform]',
@@ -70,7 +70,10 @@ export default Repack.defineRspackConfig(env => {
             options: {},
           },
         },
-        ...Repack.getAssetTransformRules({inline: true, maxInlineSize: 90 * 1024}),
+        ...Repack.getAssetTransformRules({
+          inline: true,
+          maxInlineSize: 90 * 1024,
+        }),
       ],
     },
     plugins: [
@@ -91,10 +94,10 @@ export default Repack.defineRspackConfig(env => {
         filename: 'host.container.js.bundle',
         dts: false,
         remotes: {
-          listApp:    remoteUrl('listApp'),
-          partyApp:   remoteUrl('partyApp'),
+          listApp: remoteUrl('listApp'),
+          partyApp: remoteUrl('partyApp'),
           regionsApp: remoteUrl('regionsApp'),
-          detailApp:  remoteUrl('detailApp'),
+          detailApp: remoteUrl('detailApp'),
         },
         shared: getMFShared('host', pkg),
       }),
@@ -109,7 +112,7 @@ export default Repack.defineRspackConfig(env => {
       new NativeWindPlugin(),
       // --- @react-navigation/elements optionally requires masked-view (only for masked
       // headers, which we don't use). Ignore it to keep the build warning-free. ---
-      new rspack.IgnorePlugin({resourceRegExp: /^@react-native-masked-view/}),
+      new rspack.IgnorePlugin({ resourceRegExp: /^@react-native-masked-view/ }),
     ],
   };
 });

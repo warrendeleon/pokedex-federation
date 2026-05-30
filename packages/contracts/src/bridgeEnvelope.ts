@@ -6,8 +6,8 @@
 // bridge middleware reads fulfilled queries and pushes the matched ones. Renaming an endpoint
 // = one row update here; native subscribers keep working. ---
 
-import {BRIDGE_KEYS, type BridgeKey} from './bridgeKeys';
-import {type ModuleId} from './modules';
+import { BRIDGE_KEYS, type BridgeKey } from './bridgeKeys';
+import { type ModuleId } from './modules';
 
 export interface BridgeEnvelope<TPayload = unknown> {
   version: 1;

@@ -1,8 +1,8 @@
-import React, {useEffect} from 'react';
-import {AccessibilityInfo} from 'react-native';
+import React, { useEffect } from 'react';
+import { AccessibilityInfo } from 'react-native';
 
-import {Box} from './ui/box';
-import {Text} from './ui/text';
+import { Box } from './ui/box';
+import { Text } from './ui/text';
 
 // --- A transient status message (WCAG 4.1.3 Status Messages): tells a screen-reader user that
 // something happened without moving focus. Two mechanisms, because the platforms differ: Android
@@ -28,7 +28,7 @@ export function StatusBanner({
   }, [message]);
 
   return (
-    <Box className="absolute top-0 left-0 right-0 items-center pt-3 px-4">
+    <Box className="absolute left-0 right-0 top-0 items-center px-4 pt-3">
       <Box
         accessible
         accessibilityLiveRegion="polite"

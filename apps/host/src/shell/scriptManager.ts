@@ -1,10 +1,10 @@
-import {NativeModules, Platform} from 'react-native';
-import {ScriptManager} from '@callstack/repack/client';
-import type {ModuleFederationRuntimePlugin} from '@module-federation/runtime';
-import {registerPlugins, registerRemotes} from '@module-federation/runtime';
+import { NativeModules, Platform } from 'react-native';
+import { ScriptManager } from '@callstack/repack/client';
+import type { ModuleFederationRuntimePlugin } from '@module-federation/runtime';
+import { registerPlugins, registerRemotes } from '@module-federation/runtime';
 
-import {BUNDLED_VERSIONS, EMBEDDED_MANIFESTS} from './embedded-manifests';
-import {mmkvStorage} from './storage';
+import { BUNDLED_VERSIONS, EMBEDDED_MANIFESTS } from './embedded-manifests';
+import { mmkvStorage } from './storage';
 
 // --- The federation's operational layer: how remotes are located + version-resolved per launch,
 // and how the app degrades when the CDN is unreachable.
@@ -25,7 +25,9 @@ import {mmkvStorage} from './storage';
 const SCRIPT_URL: string | undefined =
   NativeModules?.SourceCode?.scriptURL ||
   (
-    NativeModules?.SourceCode as {getConstants?: () => {scriptURL?: string}} | undefined
+    NativeModules?.SourceCode as
+      | { getConstants?: () => { scriptURL?: string } }
+      | undefined
   )?.getConstants?.()?.scriptURL;
 const APP_PATH =
   SCRIPT_URL && SCRIPT_URL.startsWith('file://')
@@ -38,11 +40,18 @@ if (!__DEV__) {
   ScriptManager.shared.setStorage(mmkvStorage);
 }
 
-const REMOTE_NAMES = ['listApp', 'partyApp', 'regionsApp', 'detailApp'] as const;
+const REMOTE_NAMES = [
+  'listApp',
+  'partyApp',
+  'regionsApp',
+  'detailApp',
+] as const;
 
 declare const __MF_CDN_BASE__: string;
 const PROD_CDN_BASE =
-  typeof __MF_CDN_BASE__ === 'string' ? __MF_CDN_BASE__ : 'https://cdn.example.com/mf';
+  typeof __MF_CDN_BASE__ === 'string'
+    ? __MF_CDN_BASE__
+    : 'https://cdn.example.com/mf';
 const PROBE_TIMEOUT_MS = 1500;
 
 export type FederationMode = 'dev' | 'cdn' | 'bundled';
@@ -55,7 +64,11 @@ export interface FederationStatus {
   versions: Record<string, string>;
 }
 
-let status: FederationStatus = {mode: 'dev', source: 'Re.Pack dev servers', versions: {}};
+let status: FederationStatus = {
+  mode: 'dev',
+  source: 'Re.Pack dev servers',
+  versions: {},
+};
 let initialized = false;
 
 function cdnManifestUrl(name: string, version: string): string {
@@ -76,13 +89,15 @@ const bundledFallbackPlugin: ModuleFederationRuntimePlugin = {
     if (!remote) return undefined;
     const manifest = EMBEDDED_MANIFESTS[Platform.OS]?.[remote];
     if (!manifest) {
-      console.warn(`[mf-fallback] no embedded manifest for ${Platform.OS}/${remote}`);
+      console.warn(
+        `[mf-fallback] no embedded manifest for ${Platform.OS}/${remote}`,
+      );
       return undefined;
     }
     return Promise.resolve(
       new Response(JSON.stringify(manifest), {
         status: 200,
-        headers: {'Content-Type': 'application/json'},
+        headers: { 'Content-Type': 'application/json' },
       }),
     );
   },
@@ -97,11 +112,13 @@ registerPlugins([bundledFallbackPlugin]);
 ScriptManager.shared.addResolver(
   async (scriptId, caller) => {
     if (status.mode !== 'bundled' || !APP_PATH) return undefined;
-    const remoteName = REMOTE_NAMES.includes(scriptId as (typeof REMOTE_NAMES)[number])
+    const remoteName = REMOTE_NAMES.includes(
+      scriptId as (typeof REMOTE_NAMES)[number],
+    )
       ? scriptId
       : caller && REMOTE_NAMES.includes(caller as (typeof REMOTE_NAMES)[number])
-      ? caller
-      : undefined;
+        ? caller
+        : undefined;
     if (!remoteName) return undefined;
     const version = BUNDLED_VERSIONS[Platform.OS]?.[remoteName];
     if (!version) return undefined;
@@ -115,7 +132,7 @@ ScriptManager.shared.addResolver(
       absolute: true,
     };
   },
-  {key: '__bundled_fs__', priority: 100},
+  { key: '__bundled_fs__', priority: 100 },
 );
 
 // --- Boot-time version-map probe. Doubles as the CDN reachability check: a 200 with valid JSON
@@ -124,10 +141,13 @@ async function fetchVersionMap(): Promise<Record<string, string> | null> {
   try {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
-    const res = await fetch(`${PROD_CDN_BASE}/${Platform.OS}/version-map.json`, {
-      signal: controller.signal,
-      headers: {'cache-control': 'no-cache'},
-    });
+    const res = await fetch(
+      `${PROD_CDN_BASE}/${Platform.OS}/version-map.json`,
+      {
+        signal: controller.signal,
+        headers: { 'cache-control': 'no-cache' },
+      },
+    );
     clearTimeout(timer);
     if (!res.ok) return null;
     return (await res.json()) as Record<string, string>;
@@ -138,27 +158,32 @@ async function fetchVersionMap(): Promise<Record<string, string> | null> {
 
 function registerCdnRemotes(versions: Record<string, string>): void {
   registerRemotes(
-    REMOTE_NAMES.map(name => ({name, entry: cdnManifestUrl(name, versions[name] ?? 'latest')})),
-    {force: true},
+    REMOTE_NAMES.map(name => ({
+      name,
+      entry: cdnManifestUrl(name, versions[name] ?? 'latest'),
+    })),
+    { force: true },
   );
 }
 
 // --- Awaited by the federation gate in App.tsx before the navigator (and its React.lazy
 // federated tabs) mounts, so the resolver/plugin + remote registrations are in place before the
 // MF runtime fires its first request. ---
-export async function initializeFederation(): Promise<{mode: FederationMode}> {
-  if (initialized) return {mode: status.mode};
+export async function initializeFederation(): Promise<{
+  mode: FederationMode;
+}> {
+  if (initialized) return { mode: status.mode };
   initialized = true;
 
   if (__DEV__) {
-    status = {mode: 'dev', source: 'Re.Pack dev servers', versions: {}};
-    return {mode: status.mode};
+    status = { mode: 'dev', source: 'Re.Pack dev servers', versions: {} };
+    return { mode: status.mode };
   }
 
   const cdnVersions = await fetchVersionMap();
   if (cdnVersions) {
     registerCdnRemotes(cdnVersions);
-    status = {mode: 'cdn', source: PROD_CDN_BASE, versions: cdnVersions};
+    status = { mode: 'cdn', source: PROD_CDN_BASE, versions: cdnVersions };
   } else {
     // Bundled: leave the build-time remote registrations in place; the plugin serves their
     // manifests from EMBEDDED_MANIFESTS and the resolver maps container + chunks to the embedded
@@ -169,7 +194,7 @@ export async function initializeFederation(): Promise<{mode: FederationMode}> {
       versions: BUNDLED_VERSIONS[Platform.OS] ?? {},
     };
   }
-  return {mode: status.mode};
+  return { mode: status.mode };
 }
 
 export function getFederationStatus(): FederationStatus {
@@ -181,15 +206,22 @@ export function getFederationStatus(): FederationStatus {
 // cache. DEV + bundled don't re-register (Re.Pack's resolution / the bundled resolver own the
 // entry); CDN re-registers the resolved versioned URL. ---
 export async function forceReloadRemote(remoteName: string): Promise<void> {
-  if (!REMOTE_NAMES.includes(remoteName as (typeof REMOTE_NAMES)[number])) return;
+  if (!REMOTE_NAMES.includes(remoteName as (typeof REMOTE_NAMES)[number]))
+    return;
   if (status.mode === 'cdn') {
     const version = status.versions[remoteName] ?? 'latest';
     try {
-      registerRemotes([{name: remoteName, entry: cdnManifestUrl(remoteName, version)}], {
-        force: true,
-      });
+      registerRemotes(
+        [{ name: remoteName, entry: cdnManifestUrl(remoteName, version) }],
+        {
+          force: true,
+        },
+      );
     } catch (e) {
-      console.warn(`[forceReloadRemote] registerRemotes failed for ${remoteName}:`, e);
+      console.warn(
+        `[forceReloadRemote] registerRemotes failed for ${remoteName}:`,
+        e,
+      );
     }
   }
   try {
@@ -200,6 +232,9 @@ export async function forceReloadRemote(remoteName: string): Promise<void> {
   try {
     await ScriptManager.shared.invalidateScripts([remoteName]);
   } catch (e) {
-    console.warn(`[forceReloadRemote] invalidateScripts failed for ${remoteName}:`, e);
+    console.warn(
+      `[forceReloadRemote] invalidateScripts failed for ${remoteName}:`,
+      e,
+    );
   }
 }

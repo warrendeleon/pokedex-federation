@@ -1,0 +1,10 @@
+node_modules/
+**/node_modules/
+**/lib/
+**/build/
+**/ios/
+**/android/
+**/*.bundle
+package-lock.json
+# Vendored Gluestack primitives: leave their formatting as shipped
+packages/ui/src/components/ui/

@@ -5,11 +5,11 @@
 // Importing it from the exposed module guarantees it loads whenever the screen does. ---
 import '../global.css';
 
-import React, {useEffect, useState} from 'react';
-import {ScrollView} from 'react-native';
-import {useDispatch, useSelector} from 'react-redux';
+import React, { useEffect, useState } from 'react';
+import { ScrollView } from 'react-native';
+import { useDispatch, useSelector } from 'react-redux';
 
-import {CROSS_MODULE_ACTIONS} from '@pokedex/contracts';
+import { CROSS_MODULE_ACTIONS } from '@pokedex/contracts';
 import {
   bgClassForType,
   Box,
@@ -30,7 +30,7 @@ import {
   VStack,
 } from '@pokedex/ui';
 
-import {useGetPokemonDetailQuery} from './detailApi';
+import { useGetPokemonDetailQuery } from './detailApi';
 
 // --- detailApp's exposed screen: a single Pokémon's detail, fetched from the host's shared RTK
 // Query baseApi (an endpoint detailApp injects). A federated remote reachable from any micro-app
@@ -47,11 +47,11 @@ interface Props {
   // uid is set only when this screen was opened from the party tab (the slot's uid). Its presence
   // means "already a party member", which is how we show an in-party indicator instead of Add
   // without breaking add-duplicates-from-the-Pokédex (where no uid is passed).
-  route?: {params?: {id?: number; uid?: number}};
+  route?: { params?: { id?: number; uid?: number } };
 }
 
 interface PartySliceShape {
-  party?: {members: {id: number}[]};
+  party?: { members: { id: number }[] };
 }
 const MAX_PARTY = 6;
 
@@ -64,11 +64,11 @@ const STAT_LABELS: Record<string, string> = {
   speed: 'Speed',
 };
 
-export function PokemonDetailScreen({route}: Props) {
+export function PokemonDetailScreen({ route }: Props) {
   const id = route?.params?.id ?? 1;
   // Opened from the party tab carries the slot uid; that's our "already in party" signal.
   const fromParty = route?.params?.uid != null;
-  const {data, isLoading, isError, refetch} = useGetPokemonDetailQuery(id);
+  const { data, isLoading, isError, refetch } = useGetPokemonDetailQuery(id);
   const dispatch = useDispatch();
   const partyCount = useSelector((s: PartySliceShape) => s.party?.members.length ?? 0);
   const isFull = partyCount >= MAX_PARTY;
@@ -124,7 +124,7 @@ export function PokemonDetailScreen({route}: Props) {
           <Center className={`py-8 ${bgClassForType(primary)}`}>
             <VStack space="lg" className="items-center">
               <Image
-                source={{uri: data.spriteUri}}
+                source={{ uri: data.spriteUri }}
                 alt={data.name}
                 size="xl"
                 resizeMode="contain"
@@ -163,7 +163,12 @@ export function PokemonDetailScreen({route}: Props) {
               </Heading>
               <VStack>
                 {data.stats.map(s => (
-                  <StatBar key={s.name} label={STAT_LABELS[s.name] ?? s.name} value={s.value} colourType={primary} />
+                  <StatBar
+                    key={s.name}
+                    label={STAT_LABELS[s.name] ?? s.name}
+                    value={s.value}
+                    colourType={primary}
+                  />
                 ))}
               </VStack>
             </VStack>
@@ -172,8 +177,8 @@ export function PokemonDetailScreen({route}: Props) {
               // Opened from the party tab: this Pokémon is already a member, so show a static
               // indicator rather than offering to add it again.
               <Box
-                className="bg-lightGreen rounded-xl items-center justify-center py-3.5"
-                style={{alignSelf: 'stretch'}}
+                className="items-center justify-center rounded-xl bg-lightGreen py-3.5"
+                style={{ alignSelf: 'stretch' }}
               >
                 <Text bold className="text-darkGreen">
                   ✓ In your party
@@ -184,8 +189,8 @@ export function PokemonDetailScreen({route}: Props) {
                 onPress={onAddToParty}
                 isDisabled={isFull}
                 size="lg"
-                className="bg-navy rounded-xl"
-                style={{alignSelf: 'stretch'}}
+                className="rounded-xl bg-navy"
+                style={{ alignSelf: 'stretch' }}
               >
                 <ButtonText className="text-white">
                   {isFull ? 'Party Full' : 'Add to Party'}

@@ -16,10 +16,10 @@
 //   defaults to a patch bump. Override the registry with REGISTRY=... and skip the server
 //   restart (steps 3-4) with NO_RESTART=1 (e.g. when the servers aren't running). ---
 
-import {execFileSync, spawn} from 'node:child_process';
-import {openSync} from 'node:fs';
+import { execFileSync, spawn } from 'node:child_process';
+import { openSync } from 'node:fs';
 import path from 'node:path';
-import {fileURLToPath} from 'node:url';
+import { fileURLToPath } from 'node:url';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const REGISTRY = process.env.REGISTRY ?? 'http://localhost:4873';
@@ -29,11 +29,11 @@ const REGISTRY = process.env.REGISTRY ?? 'http://localhost:4873';
 // with a bare `react-native start`; remotes pass the rspack config + their port explicitly. This
 // is the single source of truth for "which servers exist and on what port". ---
 const APPS = [
-  {name: 'host', port: 8081, remote: false},
-  {name: 'list', port: 8082, remote: true},
-  {name: 'party', port: 8083, remote: true},
-  {name: 'regions', port: 8084, remote: true},
-  {name: 'detail', port: 8085, remote: true},
+  { name: 'host', port: 8081, remote: false },
+  { name: 'list', port: 8082, remote: true },
+  { name: 'party', port: 8083, remote: true },
+  { name: 'regions', port: 8084, remote: true },
+  { name: 'detail', port: 8085, remote: true },
 ];
 
 const [pkgArg, bumpArg = 'patch'] = process.argv.slice(2);
@@ -53,13 +53,13 @@ const pkgDir = path.join(ROOT, 'packages', pkgArg);
 /** Run a command, inheriting stdio so output streams live, and fail loudly. */
 function run(cmd, args, cwd) {
   console.log(`\n$ ${cmd} ${args.join(' ')}  (in ${path.relative(ROOT, cwd) || '.'})`);
-  execFileSync(cmd, args, {cwd, stdio: 'inherit'});
+  execFileSync(cmd, args, { cwd, stdio: 'inherit' });
 }
 
 // --- 1. Bump + build + publish ---------------------------------------------------------------
 run('npm', ['version', bumpArg, '--no-git-tag-version'], pkgDir);
 const version = JSON.parse(
-  execFileSync('npm', ['pkg', 'get', 'version'], {cwd: pkgDir}).toString(),
+  execFileSync('npm', ['pkg', 'get', 'version'], { cwd: pkgDir }).toString()
 );
 console.log(`\n${pkgName} -> ${version}`);
 
@@ -71,7 +71,7 @@ for (const app of APPS) {
   run(
     'npm',
     ['install', `${pkgName}@${version}`, '--save', '--registry', REGISTRY],
-    path.join(ROOT, 'apps', app.name),
+    path.join(ROOT, 'apps', app.name)
   );
 }
 
@@ -85,7 +85,10 @@ if (process.env.NO_RESTART) {
 // --reset-cache forces each bundler to re-read node_modules and pick up the new package.
 function killPort(port) {
   try {
-    const pids = execFileSync('lsof', ['-ti', `tcp:${port}`]).toString().trim().split('\n');
+    const pids = execFileSync('lsof', ['-ti', `tcp:${port}`])
+      .toString()
+      .trim()
+      .split('\n');
     for (const pid of pids.filter(Boolean)) {
       try {
         process.kill(Number(pid));
@@ -120,5 +123,5 @@ for (const app of APPS) {
 console.log(
   `\nDone. ${pkgName}@${version} is live across host + ${APPS.length - 1} remotes.` +
     '\nGive the servers a few seconds to compile, then reload the app:' +
-    `\n  curl -s http://localhost:8081/reload`,
+    `\n  curl -s http://localhost:8081/reload`
 );

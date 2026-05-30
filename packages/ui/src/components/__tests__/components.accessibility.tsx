@@ -1,5 +1,5 @@
 import React from 'react';
-import {renderWithTokens, screen, fireEvent} from '../../test-utils/render';
+import { renderWithTokens, screen, fireEvent } from '../../test-utils/render';
 import {
   expectAccessibilityProps,
   expectCanReceiveFocus,
@@ -10,12 +10,12 @@ import {
   expectNonColourCue,
   expectScalableText,
 } from '@pokedex/a11y-testing';
-import {PokemonCard} from '../pokemon-card';
-import {TypeBadge} from '../type-badge';
-import {StatBar} from '../stat-bar';
-import {StatusBanner} from '../status-banner';
-import {Heading} from '../ui/heading';
-import {Text} from '../ui/text';
+import { PokemonCard } from '../pokemon-card';
+import { TypeBadge } from '../type-badge';
+import { StatBar } from '../stat-bar';
+import { StatusBanner } from '../status-banner';
+import { Heading } from '../ui/heading';
+import { Text } from '../ui/text';
 
 // --- Component-level WCAG assertions. Each describe is tagged with its success criterion so the
 // accessibility-report reporter can map it. These exercise the real design-system components, so a
@@ -26,7 +26,13 @@ import {Text} from '../ui/text';
 describe('WCAG 1.1.1 - Non-text Content', () => {
   it('the card sprite exposes the Pokemon name as its accessible text', async () => {
     await renderWithTokens(
-      <PokemonCard id={1} name="Bulbasaur" types={['grass']} spriteUri="sprite://1" onPress={() => {}} />,
+      <PokemonCard
+        id={1}
+        name="Bulbasaur"
+        types={['grass']}
+        spriteUri="sprite://1"
+        onPress={() => {}}
+      />
     );
     expectImageAccessible(screen.getByLabelText('Bulbasaur'));
   });
@@ -63,7 +69,7 @@ describe('WCAG 1.4.4 - Resize Text', () => {
 describe('WCAG 2.4.3 - Focus Order', () => {
   it('the card is a single focusable element a screen reader can land on', async () => {
     await renderWithTokens(
-      <PokemonCard id={1} name="Bulbasaur" types={['grass']} onPress={() => {}} />,
+      <PokemonCard id={1} name="Bulbasaur" types={['grass']} onPress={() => {}} />
     );
     expectCanReceiveFocus(screen.getByRole('button'));
   });
@@ -72,7 +78,7 @@ describe('WCAG 2.4.3 - Focus Order', () => {
 describe('WCAG 2.5.3 - Label in Name', () => {
   it("the card's accessible name contains its visible name", async () => {
     await renderWithTokens(
-      <PokemonCard id={1} name="Bulbasaur" types={['grass', 'poison']} onPress={() => {}} />,
+      <PokemonCard id={1} name="Bulbasaur" types={['grass', 'poison']} onPress={() => {}} />
     );
     expectLabelMatchesVisibleText(screen.getByRole('button'), 'Bulbasaur');
   });
@@ -81,27 +87,29 @@ describe('WCAG 2.5.3 - Label in Name', () => {
 describe('WCAG 4.1.2 - Name, Role, Value', () => {
   it('the card exposes a button role and an accessible name', async () => {
     await renderWithTokens(
-      <PokemonCard id={1} name="Bulbasaur" types={['grass', 'poison']} onPress={() => {}} />,
+      <PokemonCard id={1} name="Bulbasaur" types={['grass', 'poison']} onPress={() => {}} />
     );
-    expectAccessibilityProps(screen.getByRole('button'), {role: 'button', label: true});
+    expectAccessibilityProps(screen.getByRole('button'), { role: 'button', label: true });
   });
 
   it('remove is reachable as a custom action, not a collapsed nested button', async () => {
     const onRemove = jest.fn();
     await renderWithTokens(
-      <PokemonCard id={1} name="Bulbasaur" types={['grass']} onRemove={onRemove} />,
+      <PokemonCard id={1} name="Bulbasaur" types={['grass']} onRemove={onRemove} />
     );
     const card = screen.getByRole('button');
-    expect(card.props.accessibilityActions).toEqual([{name: 'remove', label: 'Remove from party'}]);
-    fireEvent(card, 'accessibilityAction', {nativeEvent: {actionName: 'remove'}});
+    expect(card.props.accessibilityActions).toEqual([
+      { name: 'remove', label: 'Remove from party' },
+    ]);
+    fireEvent(card, 'accessibilityAction', { nativeEvent: { actionName: 'remove' } });
     expect(onRemove).toHaveBeenCalledTimes(1);
   });
 
   it('a stat bar exposes its value through the progressbar role', async () => {
     await renderWithTokens(<StatBar label="Attack" value={49} colourType="grass" />);
     const bar = screen.getByRole('progressbar');
-    expectAccessibilityProps(bar, {role: 'progressbar', label: 'Attack'});
-    expect(bar.props.accessibilityValue).toEqual({text: '49'});
+    expectAccessibilityProps(bar, { role: 'progressbar', label: 'Attack' });
+    expect(bar.props.accessibilityValue).toEqual({ text: '49' });
   });
 });
 

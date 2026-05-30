@@ -10,7 +10,7 @@ import {
   type NativeStackScreenProps,
 } from '@react-navigation/native-stack';
 
-import {artworkUri,shellNavigate} from '@pokedex/contracts';
+import { artworkUri, shellNavigate } from '@pokedex/contracts';
 import {
   Box,
   Card,
@@ -28,7 +28,7 @@ import {
   VStack,
 } from '@pokedex/ui';
 
-import {useGetRegionDexQuery,useGetRegionsQuery} from './regionsApi';
+import { useGetRegionDexQuery, useGetRegionsQuery } from './regionsApi';
 
 // --- regionsApp's exposed stack: browse the Pokémon regions, then a region's Pokédex. This
 // remote earns the routing table its keep twice over: regions are a different entity, navigating
@@ -39,17 +39,19 @@ import {useGetRegionDexQuery,useGetRegionsQuery} from './regionsApi';
 
 type RegionsParamList = {
   RegionsMain: undefined;
-  RegionDex: {regionName: string; label: string};
+  RegionDex: { regionName: string; label: string };
 };
 
 const Stack = createNativeStackNavigator<RegionsParamList>();
 
-function RegionsMainScreen({navigation}: NativeStackScreenProps<RegionsParamList, 'RegionsMain'>) {
-  const {data, isLoading, isError, refetch} = useGetRegionsQuery();
+function RegionsMainScreen({
+  navigation,
+}: NativeStackScreenProps<RegionsParamList, 'RegionsMain'>) {
+  const { data, isLoading, isError, refetch } = useGetRegionsQuery();
 
   return (
     <ScreenContainer>
-      <VStack space="xs" className="px-4 pt-2 pb-3">
+      <VStack space="xs" className="px-4 pb-3 pt-2">
         <Heading size="2xl" className="text-black">
           Regions
         </Heading>
@@ -69,7 +71,7 @@ function RegionsMainScreen({navigation}: NativeStackScreenProps<RegionsParamList
           <FlashList
             data={data}
             keyExtractor={region => region.name}
-            renderItem={({item}) => (
+            renderItem={({ item }) => (
               <Box className="px-4 pt-3">
                 <Pressable
                   className="active:opacity-80"
@@ -77,9 +79,10 @@ function RegionsMainScreen({navigation}: NativeStackScreenProps<RegionsParamList
                   accessibilityLabel={`${item.label}, ${item.generation}`}
                   accessibilityHint="Opens the regional Pokédex"
                   onPress={() =>
-                    navigation.navigate('RegionDex', {regionName: item.name, label: item.label})
-                  }>
-                  <Card className="bg-white rounded-2xl p-4">
+                    navigation.navigate('RegionDex', { regionName: item.name, label: item.label })
+                  }
+                >
+                  <Card className="rounded-2xl bg-white p-4">
                     <Heading size="lg" className="text-black">
                       {item.label}
                     </Heading>
@@ -97,9 +100,12 @@ function RegionsMainScreen({navigation}: NativeStackScreenProps<RegionsParamList
   );
 }
 
-function RegionDexScreen({route, navigation}: NativeStackScreenProps<RegionsParamList, 'RegionDex'>) {
-  const {regionName, label} = route.params;
-  const {data, isLoading, isError, refetch} = useGetRegionDexQuery(regionName);
+function RegionDexScreen({
+  route,
+  navigation,
+}: NativeStackScreenProps<RegionsParamList, 'RegionDex'>) {
+  const { regionName, label } = route.params;
+  const { data, isLoading, isError, refetch } = useGetRegionDexQuery(regionName);
 
   const entries: PokemonGridEntry[] = (data ?? []).map(e => ({
     id: e.id,
@@ -112,12 +118,13 @@ function RegionDexScreen({route, navigation}: NativeStackScreenProps<RegionsPara
 
   return (
     <ScreenContainer>
-      <HStack className="items-center px-4 pt-2 pb-1">
+      <HStack className="items-center px-4 pb-1 pt-2">
         <Pressable
           onPress={() => navigation.goBack()}
           accessibilityRole="button"
           accessibilityLabel="Back to Regions"
-          className="active:opacity-60">
+          className="active:opacity-60"
+        >
           <Text size="lg" className="text-blue">
             ‹ Regions
           </Text>
@@ -141,7 +148,7 @@ function RegionDexScreen({route, navigation}: NativeStackScreenProps<RegionsPara
           <PokemonGrid
             data={entries}
             numColumns={3}
-            onPressItem={entry => shellNavigate('PokemonDetail', {id: entry.id})}
+            onPressItem={entry => shellNavigate('PokemonDetail', { id: entry.id })}
           />
         </VStack>
       )}
@@ -151,7 +158,7 @@ function RegionDexScreen({route, navigation}: NativeStackScreenProps<RegionsPara
 
 export function RegionsStack() {
   return (
-    <Stack.Navigator screenOptions={{headerShown: false}}>
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="RegionsMain" component={RegionsMainScreen} />
       <Stack.Screen name="RegionDex" component={RegionDexScreen} />
     </Stack.Navigator>

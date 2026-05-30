@@ -1,6 +1,10 @@
-import {createAction, createSlice, type PayloadAction} from '@reduxjs/toolkit';
+import {
+  createAction,
+  createSlice,
+  type PayloadAction,
+} from '@reduxjs/toolkit';
 
-import {CROSS_MODULE_ACTIONS} from '@pokedex/contracts';
+import { CROSS_MODULE_ACTIONS } from '@pokedex/contracts';
 
 // --- Typed action creator for the cross-module QuickBattle result. createAction binds the
 // contract's string type to a payload shape so extraReducers gets full typing; partyApp can
@@ -21,12 +25,16 @@ const battleResult = createAction<BattleResultPayload>(
 const addFromDetail = createAction<IncomingPartyMember>(
   CROSS_MODULE_ACTIONS.detail.addToPartyFromDetail,
 );
-const addFromList = createAction<IncomingPartyMember>(CROSS_MODULE_ACTIONS.list.addToParty);
+const addFromList = createAction<IncomingPartyMember>(
+  CROSS_MODULE_ACTIONS.list.addToParty,
+);
 
 // --- Cross-module remove. partyApp dispatches this contract action with the member's uid (NOT
 // its Pokémon id): the party allows duplicates, so the id is ambiguous; the uid identifies the
 // exact slot to drop. ---
-const removeByUid = createAction<{uid: number}>(CROSS_MODULE_ACTIONS.party.remove);
+const removeByUid = createAction<{ uid: number }>(
+  CROSS_MODULE_ACTIONS.party.remove,
+);
 
 // --- Host-owned, cross-cutting state: the player's party of up to 6 Pokémon. Lives in the
 // host store from boot (not injected by a remote) because three different remotes read or
@@ -77,7 +85,7 @@ function addMember(state: PartyState, member: IncomingPartyMember): void {
   // Party is capped; adding at capacity is a graceful no-op. Duplicates are allowed (two Pikachus
   // is fine) per the brief; each gets its own uid.
   if (state.members.length >= MAX_PARTY) return;
-  state.members.push({uid: state.nextUid++, ...member});
+  state.members.push({ uid: state.nextUid++, ...member });
 }
 
 function removeMemberByUid(state: PartyState, uid: number): void {
@@ -92,7 +100,7 @@ const partySlice = createSlice({
     addToParty(state, action: PayloadAction<IncomingPartyMember>) {
       addMember(state, action.payload);
     },
-    removeFromParty(state, action: PayloadAction<{uid: number}>) {
+    removeFromParty(state, action: PayloadAction<{ uid: number }>) {
       removeMemberByUid(state, action.payload.uid);
     },
     clearParty(state) {
@@ -110,12 +118,16 @@ const partySlice = createSlice({
     builder.addCase(battleResult, (state, action) => {
       state.lastBattleWinnerId = action.payload.winnerId;
     });
-    const add = (state: PartyState, action: PayloadAction<IncomingPartyMember>) =>
-      addMember(state, action.payload);
+    const add = (
+      state: PartyState,
+      action: PayloadAction<IncomingPartyMember>,
+    ) => addMember(state, action.payload);
     builder.addCase(addFromDetail, add);
     builder.addCase(addFromList, add);
     // --- Cross-module remove: partyApp dispatches CROSS_MODULE_ACTIONS.party.remove with a uid. ---
-    builder.addCase(removeByUid, (state, action) => removeMemberByUid(state, action.payload.uid));
+    builder.addCase(removeByUid, (state, action) =>
+      removeMemberByUid(state, action.payload.uid),
+    );
   },
   selectors: {
     selectParty: state => state.members,
@@ -125,7 +137,7 @@ const partySlice = createSlice({
   },
 });
 
-export const {addToParty, removeFromParty, clearParty, setLastBattleWinner} =
+export const { addToParty, removeFromParty, clearParty, setLastBattleWinner } =
   partySlice.actions;
 export const {
   selectParty,

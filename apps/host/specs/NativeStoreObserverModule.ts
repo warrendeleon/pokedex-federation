@@ -1,5 +1,5 @@
-import type {TurboModule} from 'react-native';
-import {TurboModuleRegistry} from 'react-native';
+import type { TurboModule } from 'react-native';
+import { TurboModuleRegistry } from 'react-native';
 
 // --- TurboModule spec: the RN -> Native state mirror. The store middleware calls updateState
 // after every dispatch with an envelope (dataKey + JSON payload), so the native side can read

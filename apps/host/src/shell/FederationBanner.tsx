@@ -1,7 +1,7 @@
 import React from 'react';
-import {StyleSheet, Text, View} from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
-import {getFederationStatus} from './scriptManager';
+import { getFederationStatus } from './scriptManager';
 
 // --- The operational layer's at-a-glance indicator: which mode the federation booted in and the
 // resolved remote versions. Pinned above the tab bar, non-interactive. Colour-codes the mode so a
@@ -27,7 +27,12 @@ export function FederationBanner() {
 
   return (
     <View pointerEvents="none" style={styles.wrap}>
-      <View style={[styles.pill, {backgroundColor: MODE_COLOUR[status.mode] ?? '#515151'}]}>
+      <View
+        style={[
+          styles.pill,
+          { backgroundColor: MODE_COLOUR[status.mode] ?? '#515151' },
+        ]}
+      >
         <Text style={styles.text} numberOfLines={1}>
           ⬢ {status.mode.toUpperCase()} · {detail}
         </Text>

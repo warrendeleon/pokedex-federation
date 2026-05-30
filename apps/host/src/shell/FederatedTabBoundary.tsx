@@ -1,8 +1,8 @@
-import React, {Suspense} from 'react';
+import React, { Suspense } from 'react';
 
-import {ErrorState,LoadingState} from '@pokedex/ui';
+import { ErrorState, LoadingState } from '@pokedex/ui';
 
-import {forceReloadRemote} from './scriptManager';
+import { forceReloadRemote } from './scriptManager';
 
 // --- Owns the lifecycle of one federated mount point. Three responsibilities:
 //
@@ -19,7 +19,7 @@ import {forceReloadRemote} from './scriptManager';
 interface Props {
   name: string;
   remoteName: string;
-  load: () => Promise<{default: React.ComponentType<any>}>;
+  load: () => Promise<{ default: React.ComponentType<any> }>;
   variant?: 'light' | 'dark';
   /** Forwarded to the loaded component (e.g. route/navigation props). */
   componentProps?: Record<string, unknown>;
@@ -31,10 +31,10 @@ interface State {
 }
 
 export class FederatedTabBoundary extends React.Component<Props, State> {
-  state: State = {error: null, attempt: 0};
+  state: State = { error: null, attempt: 0 };
 
   static getDerivedStateFromError(error: Error): Partial<State> {
-    return {error};
+    return { error };
   }
 
   componentDidCatch(error: Error) {
@@ -43,12 +43,12 @@ export class FederatedTabBoundary extends React.Component<Props, State> {
 
   private retry = async () => {
     await forceReloadRemote(this.props.remoteName);
-    this.setState(s => ({error: null, attempt: s.attempt + 1}));
+    this.setState(s => ({ error: null, attempt: s.attempt + 1 }));
   };
 
   render() {
-    const {error} = this.state;
-    const {name, variant = 'light', load, componentProps} = this.props;
+    const { error } = this.state;
+    const { name, variant = 'light', load, componentProps } = this.props;
 
     if (error) {
       return (
@@ -88,20 +88,22 @@ function FederatedSlot({
     () =>
       React.lazy(async () => {
         const m = await load();
-        const Component = (m as {default?: React.ComponentType<any>}).default;
+        const Component = (m as { default?: React.ComponentType<any> }).default;
         if (typeof Component !== 'function') {
           throw new Error(
             `Federated module "${name}" loaded but did not export a component (the manifest fetch likely failed and MF returned a partial module).`,
           );
         }
-        return {default: Component};
+        return { default: Component };
       }),
     // The boundary's `key` change forces a remount, so this only ever runs once per mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
   return (
-    <Suspense fallback={<LoadingState variant={variant} caption={`Loading ${name}…`} />}>
+    <Suspense
+      fallback={<LoadingState variant={variant} caption={`Loading ${name}…`} />}
+    >
       <Lazy {...(componentProps ?? {})} />
     </Suspense>
   );

@@ -1,14 +1,14 @@
 import React from 'react';
-import {type ImageSourcePropType} from 'react-native';
+import { type ImageSourcePropType } from 'react-native';
 
-import {tintBgClassForType} from '../tokens/typeColours';
+import { tintBgClassForType } from '../tokens/typeColours';
 
-import {Box} from './ui/box';
-import {Card} from './ui/card';
-import {Image} from './ui/image';
-import {Pressable} from './ui/pressable';
-import {Text} from './ui/text';
-import {TypeBadge} from './type-badge';
+import { Box } from './ui/box';
+import { Card } from './ui/card';
+import { Image } from './ui/image';
+import { Pressable } from './ui/pressable';
+import { Text } from './ui/text';
+import { TypeBadge } from './type-badge';
 
 // --- The Pokédex grid's primary card. White rounded background, hashed ID, circular tinted
 // sprite area (background tint is the primary type's colour at 30% opacity so the sprite
@@ -44,7 +44,7 @@ export function PokemonCard({
   const paddedId = String(id).padStart(3, '0');
   const idLabel = `#${paddedId}`;
   const source: ImageSourcePropType | undefined =
-    spriteSource ?? (spriteUri ? {uri: spriteUri} : undefined);
+    spriteSource ?? (spriteUri ? { uri: spriteUri } : undefined);
 
   // The whole card is one accessible button, so a screen reader announces this name rather than
   // the concatenated child text. Remove is a custom action on that same element, not a nested
@@ -59,7 +59,7 @@ export function PokemonCard({
       accessibilityRole="button"
       accessibilityLabel={a11yLabel}
       accessibilityHint={onPress ? 'Opens details' : undefined}
-      accessibilityActions={onRemove ? [{name: 'remove', label: 'Remove from party'}] : undefined}
+      accessibilityActions={onRemove ? [{ name: 'remove', label: 'Remove from party' }] : undefined}
       onAccessibilityAction={
         onRemove
           ? event => {
@@ -69,7 +69,7 @@ export function PokemonCard({
       }
       className="active:opacity-80"
     >
-      <Card className="bg-white rounded-2xl p-3 items-center">
+      <Card className="items-center rounded-2xl bg-white p-3">
         {onRemove ? (
           <Pressable
             onPress={onRemove}
@@ -77,25 +77,25 @@ export function PokemonCard({
             importantForAccessibility="no-hide-descendants"
             accessibilityElementsHidden
             hitSlop={10}
-            className="absolute top-1.5 right-1.5 z-10 h-6 w-6 rounded-full bg-red items-center justify-center active:opacity-70"
+            className="absolute right-1.5 top-1.5 z-10 h-6 w-6 items-center justify-center rounded-full bg-red active:opacity-70"
           >
             <Text size="xs" bold className="text-white">
               ✕
             </Text>
           </Pressable>
         ) : null}
-        <Text size="xs" className="text-midGrey self-start mb-1">
+        <Text size="xs" className="mb-1 self-start text-midGrey">
           {idLabel}
         </Text>
-        <Box className={`w-16 h-16 rounded-full items-center justify-center mb-2 ${tintBg}`}>
+        <Box className={`mb-2 h-16 w-16 items-center justify-center rounded-full ${tintBg}`}>
           {source ? (
-            <Image source={source} resizeMode="contain" className="w-12 h-12" alt={name} />
+            <Image source={source} resizeMode="contain" className="h-12 w-12" alt={name} />
           ) : null}
         </Box>
         <Text bold size="md" className="mb-1.5 text-center">
           {name}
         </Text>
-        <Box className="flex-row gap-1 flex-wrap justify-center">
+        <Box className="flex-row flex-wrap justify-center gap-1">
           {types.map(t => (
             <TypeBadge key={t} type={t} />
           ))}

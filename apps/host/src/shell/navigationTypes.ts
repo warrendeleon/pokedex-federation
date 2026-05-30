@@ -1,4 +1,4 @@
-import type {NavigatorScreenParams} from '@react-navigation/native';
+import type { NavigatorScreenParams } from '@react-navigation/native';
 
 // --- Typed navigation surface for the host's root stack. Both the navigationRef (used by
 // shellNavigation to drive navigation from outside React) and the screen components reference
@@ -16,5 +16,5 @@ export type RootStackParamList = {
   Tabs: NavigatorScreenParams<RootTabParamList>;
   // uid is present only when opened from the party tab (the party slot's uid). The detail screen
   // uses its presence to show an "in party" indicator instead of Add to Party.
-  PokemonDetail: {id: number; uid?: number};
+  PokemonDetail: { id: number; uid?: number };
 };

@@ -9,11 +9,11 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 2021,
     sourceType: 'module',
-    ecmaFeatures: {jsx: true},
+    ecmaFeatures: { jsx: true },
   },
-  env: {es2021: true, node: true, jest: true},
-  globals: {__DEV__: 'readonly'},
-  settings: {react: {version: 'detect'}},
+  env: { es2021: true, node: true, jest: true },
+  globals: { __DEV__: 'readonly' },
+  settings: { react: { version: 'detect' } },
   plugins: ['@typescript-eslint', 'simple-import-sort', 'react-hooks'],
   extends: [
     'eslint:recommended',
@@ -45,11 +45,13 @@ module.exports = {
       // React.ComponentType<any> is the correct, type-honest representation here. Scoped to this one
       // file; no-explicit-any stays an error everywhere else.
       files: ['**/shell/FederatedTabBoundary.tsx'],
-      rules: {'@typescript-eslint/no-explicit-any': 'off'},
+      rules: { '@typescript-eslint/no-explicit-any': 'off' },
     },
   ],
   ignorePatterns: [
     '**/lib/**',
+    '**/dist/**',
+    '**/build/**',
     '**/node_modules/**',
     'packages/ui/src/components/ui/**',
     '**/test-utils/**',

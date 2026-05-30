@@ -5,9 +5,9 @@
 module.exports = {
   projectName: '@pokedex/ui',
   overrides: {
-    '1.3.5': {layer: 'n/a', note: 'no text inputs in this app'},
-    '3.3.1': {layer: 'n/a', note: 'no text inputs in this app'},
-    '3.3.2': {layer: 'n/a', note: 'no text inputs in this app'},
-    '2.4.4': {layer: 'n/a', note: 'no links; navigation is native buttons'},
+    '1.3.5': { layer: 'n/a', note: 'no text inputs in this app' },
+    '3.3.1': { layer: 'n/a', note: 'no text inputs in this app' },
+    '3.3.2': { layer: 'n/a', note: 'no text inputs in this app' },
+    '2.4.4': { layer: 'n/a', note: 'no links; navigation is native buttons' },
   },
 };

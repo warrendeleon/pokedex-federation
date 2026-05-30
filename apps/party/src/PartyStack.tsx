@@ -5,10 +5,10 @@
 import '../global.css';
 
 import React from 'react';
-import {useDispatch, useSelector} from 'react-redux';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
+import { useDispatch, useSelector } from 'react-redux';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
-import {CROSS_MODULE_ACTIONS,shellNavigate} from '@pokedex/contracts';
+import { CROSS_MODULE_ACTIONS, shellNavigate } from '@pokedex/contracts';
 import {
   Box,
   Button,
@@ -40,7 +40,7 @@ interface PartyMember {
   power?: number;
 }
 interface PartySliceShape {
-  party?: {members: PartyMember[]; lastBattleWinnerId: number | null};
+  party?: { members: PartyMember[]; lastBattleWinnerId: number | null };
 }
 
 function PartyMainScreen() {
@@ -53,12 +53,12 @@ function PartyMainScreen() {
     // RN -> Native: hand the native flow the current party as input.
     const result = await shellNavigate('QuickBattle', {
       // Hand native the battle-relevant projection: id + name to show, power to weight the pick.
-      party: members.map(p => ({id: p.id, name: p.name, power: p.power ?? 0})),
+      party: members.map(p => ({ id: p.id, name: p.name, power: p.power ?? 0 })),
     });
     // Native -> RN: dispatch the returned winner as a contract action; the host party slice
     // owns the reducer, so partyApp stays decoupled from the host's slice file.
     if (result && typeof result.winnerId === 'number') {
-      dispatch({type: CROSS_MODULE_ACTIONS.party.battleResult, payload: result});
+      dispatch({ type: CROSS_MODULE_ACTIONS.party.battleResult, payload: result });
     }
   };
 
@@ -73,13 +73,13 @@ function PartyMainScreen() {
   const onRemove = (entry: PokemonGridEntry) => {
     // Cross-module write: partyApp asks the host-owned slice to drop this exact slot by uid.
     if (entry.uid != null) {
-      dispatch({type: CROSS_MODULE_ACTIONS.party.remove, payload: {uid: entry.uid}});
+      dispatch({ type: CROSS_MODULE_ACTIONS.party.remove, payload: { uid: entry.uid } });
     }
   };
 
   return (
     <ScreenContainer variant="dark">
-      <VStack space="xs" className="px-4 pt-2 pb-1">
+      <VStack space="xs" className="px-4 pb-1 pt-2">
         <Heading size="2xl" className="text-white">
           My Party
         </Heading>
@@ -88,17 +88,22 @@ function PartyMainScreen() {
         </Text>
       </VStack>
       <Box className="px-3 pb-2">
-        <Button onPress={onQuickBattle} size="lg" className="bg-type-electric" isDisabled={members.length === 0}>
+        <Button
+          onPress={onQuickBattle}
+          size="lg"
+          className="bg-type-electric"
+          isDisabled={members.length === 0}
+        >
           <ButtonText className="text-black">Quick Battle</ButtonText>
         </Button>
         {winnerName ? (
-          <Text className="text-white mt-3 text-center">Last battle winner: {winnerName}</Text>
+          <Text className="mt-3 text-center text-white">Last battle winner: {winnerName}</Text>
         ) : null}
       </Box>
       {members.length === 0 ? (
         <Center className="flex-1 px-8">
-          <Text className="text-white text-center text-lg">Your party is empty</Text>
-          <Text className="text-midGrey text-center mt-2">
+          <Text className="text-center text-lg text-white">Your party is empty</Text>
+          <Text className="mt-2 text-center text-midGrey">
             Open a Pokémon from the Pokédex and tap Add to Party.
           </Text>
         </Center>
@@ -109,7 +114,7 @@ function PartyMainScreen() {
             numColumns={2}
             // Pass the slot uid so the detail screen knows this Pokémon is already a party member
             // (it shows an "in party" indicator instead of Add to Party).
-            onPressItem={entry => shellNavigate('PokemonDetail', {id: entry.id, uid: entry.uid})}
+            onPressItem={entry => shellNavigate('PokemonDetail', { id: entry.id, uid: entry.uid })}
             onRemoveItem={onRemove}
           />
         </Box>
@@ -121,7 +126,7 @@ function PartyMainScreen() {
 export function PartyStack() {
   return (
     <Stack.Navigator>
-      <Stack.Screen name="PartyMain" component={PartyMainScreen} options={{headerShown: false}} />
+      <Stack.Screen name="PartyMain" component={PartyMainScreen} options={{ headerShown: false }} />
     </Stack.Navigator>
   );
 }

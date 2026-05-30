@@ -1,6 +1,6 @@
-import type {TurboModule} from 'react-native';
-import {TurboModuleRegistry} from 'react-native';
-import type {EventEmitter} from 'react-native/Libraries/Types/CodegenTypes';
+import type { TurboModule } from 'react-native';
+import { TurboModuleRegistry } from 'react-native';
+import type { EventEmitter } from 'react-native/Libraries/Types/CodegenTypes';
 
 // --- TurboModule spec: the two-way bridge between the shell router and native.
 //

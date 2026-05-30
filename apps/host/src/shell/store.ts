@@ -1,4 +1,4 @@
-import {combineSlices, configureStore} from '@reduxjs/toolkit';
+import { combineSlices, configureStore } from '@reduxjs/toolkit';
 import {
   createMigrate,
   FLUSH,
@@ -12,11 +12,11 @@ import {
   REHYDRATE,
 } from 'redux-persist';
 
-import {baseApi} from '@pokedex/contracts';
+import { baseApi } from '@pokedex/contracts';
 
-import {nativeBridgeMiddleware} from './nativeBridge';
+import { nativeBridgeMiddleware } from './nativeBridge';
 import partySlice from './partySlice';
-import {mmkvStorage} from './storage';
+import { mmkvStorage } from './storage';
 
 // --- The host store. combineSlices (RTK 2.x) gives us runtime slice composition: federated
 // remotes call `rootReducer.inject(theirSlice)` at load to register feature-local reducers
@@ -33,7 +33,13 @@ export type RootState = ReturnType<typeof rootReducer>;
 // member removable. New installs run this against empty state and no-op. ---
 interface PersistedRoot {
   party?: {
-    members?: {uid?: number; id: number; name: string; types: string[]; spriteUri?: string}[];
+    members?: {
+      uid?: number;
+      id: number;
+      name: string;
+      types: string[];
+      spriteUri?: string;
+    }[];
     nextUid?: number;
     lastBattleWinnerId?: number | null;
   };
@@ -45,9 +51,12 @@ const migrations = {
     if (!root?.party) return state;
     let next = typeof root.party.nextUid === 'number' ? root.party.nextUid : 1;
     const members = (root.party.members ?? []).map(m =>
-      typeof m.uid === 'number' ? m : {...m, uid: next++},
+      typeof m.uid === 'number' ? m : { ...m, uid: next++ },
     );
-    return {...root, party: {...root.party, members, nextUid: next}} as PersistedState;
+    return {
+      ...root,
+      party: { ...root.party, members, nextUid: next },
+    } as PersistedState;
   },
 };
 
@@ -83,4 +92,4 @@ export type AppDispatch = typeof store.dispatch;
 
 // --- Exposed so federated remotes can inject their reducers + endpoints against the host's
 // single store instance (shared at runtime via the @reduxjs/toolkit MF singleton). ---
-export {rootReducer};
+export { rootReducer };

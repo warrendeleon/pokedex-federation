@@ -13,6 +13,6 @@ jest.mock('react-native-reanimated', () => {
   try {
     return require('react-native-reanimated/mock');
   } catch {
-    return {__esModule: true, default: {}};
+    return { __esModule: true, default: {} };
   }
 });

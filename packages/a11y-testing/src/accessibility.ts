@@ -21,9 +21,9 @@ type StyleLike = Record<string, unknown> | null | undefined | StyleLike[];
  *  StyleSheet.flatten, reimplemented so this util needs no react-native import. */
 export function flattenStyle(style: StyleLike): Record<string, unknown> {
   if (Array.isArray(style)) {
-    return style.reduce<Record<string, unknown>>((acc, s) => ({...acc, ...flattenStyle(s)}), {});
+    return style.reduce<Record<string, unknown>>((acc, s) => ({ ...acc, ...flattenStyle(s) }), {});
   }
-  return style ? {...style} : {};
+  return style ? { ...style } : {};
 }
 
 // MARK: - 1.4.3 Contrast (Minimum)
@@ -57,7 +57,7 @@ function channelToLinear(value: number): number {
 }
 
 function relativeLuminance(hex: string): number {
-  const {r, g, b} = hexToRgb(hex);
+  const { r, g, b } = hexToRgb(hex);
   return 0.2126 * channelToLinear(r) + 0.7152 * channelToLinear(g) + 0.0722 * channelToLinear(b);
 }
 
@@ -82,7 +82,7 @@ export interface ContrastOptions {
 export function expectColorContrast(
   foreground: string,
   background: string,
-  options: ContrastOptions = {},
+  options: ContrastOptions = {}
 ): void {
   const ratio = calculateContrastRatio(foreground, background);
   const min = options.largeText || options.uiComponent ? 3 : 4.5;
@@ -107,7 +107,8 @@ function measuredSize(element: TestElement, axis: 'Width' | 'Height'): number | 
   const style = flattenStyle(element.props.style as StyleLike);
   // 1. flattened style (min<axis> or fixed <axis>)
   const fromStyle =
-    (style[`min${axis}`] as number | undefined) ?? (style[axis.toLowerCase()] as number | undefined);
+    (style[`min${axis}`] as number | undefined) ??
+    (style[axis.toLowerCase()] as number | undefined);
   if (typeof fromStyle === 'number') return fromStyle;
   // 2. full-size values fill their container and always pass
   if (style[axis.toLowerCase()] === '100%') return MIN_TARGET_IOS;
@@ -127,7 +128,7 @@ export function expectMinTouchTarget(element: TestElement, min: number = MIN_TAR
   const height = measuredSize(element, 'Height');
   if (width === undefined && height === undefined && element.props.hitSlop == null) {
     throw new Error(
-      'Element has no measurable size and no hitSlop; cannot verify the 44pt touch target (WCAG 2.5.5).',
+      'Element has no measurable size and no hitSlop; cannot verify the 44pt touch target (WCAG 2.5.5).'
     );
   }
   if (width !== undefined) expect(width).toBeGreaterThanOrEqual(min);
@@ -203,7 +204,7 @@ export function expectFocusOrder(elements: TestElement[]): void {
 /** WCAG 4.1.3: dynamic content announces itself via a live region (polite or assertive). */
 export function expectScreenReaderAnnouncement(
   element: TestElement,
-  level: 'polite' | 'assertive' = 'polite',
+  level: 'polite' | 'assertive' = 'polite'
 ): void {
   const live = (element.props.accessibilityLiveRegion ?? element.props['aria-live']) as
     | string

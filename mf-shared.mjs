@@ -51,7 +51,7 @@ export const SINGLETON_NAMES = [
  */
 export function getMFShared(side, pkg) {
   const eager = side === 'host';
-  const deps = {...(pkg.devDependencies ?? {}), ...(pkg.dependencies ?? {})};
+  const deps = { ...(pkg.devDependencies ?? {}), ...(pkg.dependencies ?? {}) };
   const shared = {};
   for (const name of SINGLETON_NAMES) {
     const range = deps[name];
@@ -66,7 +66,7 @@ export function getMFShared(side, pkg) {
       singleton: true,
       eager,
       // requiredVersion missing makes MF V2 silently DROP the shared config, so always set it.
-      ...(range ? {version, requiredVersion: range} : {requiredVersion: '*'}),
+      ...(range ? { version, requiredVersion: range } : { requiredVersion: '*' }),
     };
   }
   return shared;

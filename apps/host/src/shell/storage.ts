@@ -1,4 +1,4 @@
-import {createMMKV, type MMKV} from 'react-native-mmkv';
+import { createMMKV, type MMKV } from 'react-native-mmkv';
 
 // --- Single storage engine for the whole host: MMKV (JSI/Nitro-backed, synchronous, far
 // faster than AsyncStorage). One MMKV instance backs both redux-persist and Re.Pack's
@@ -12,7 +12,7 @@ import {createMMKV, type MMKV} from 'react-native-mmkv';
 // resolved promises; the work is already done by the time the promise settles, so there's no
 // real async cost, just interface conformance. ---
 
-const mmkv: MMKV = createMMKV({id: 'pokedex-host'});
+const mmkv: MMKV = createMMKV({ id: 'pokedex-host' });
 
 export interface AsyncKeyValueStorage {
   getItem: (key: string) => Promise<string | null | undefined>;

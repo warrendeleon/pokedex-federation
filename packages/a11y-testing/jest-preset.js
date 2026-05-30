@@ -32,7 +32,7 @@ module.exports = {
     require.resolve('react-native-css-interop/dist/test/setupAfterEnv.js'),
   ],
   transform: {
-    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', {configFile: require.resolve('./babel.jest.js')}],
+    '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { configFile: require.resolve('./babel.jest.js') }],
   },
   transformIgnorePatterns: [`node_modules/(?!(${TRANSPILE.join('|')})/)`],
 };

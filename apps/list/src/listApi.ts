@@ -1,9 +1,4 @@
-import {
-  artworkUri,
-  baseApi,
-  idFromResourceUrl,
-  type PokemonSummary,
-} from '@pokedex/contracts';
+import { artworkUri, baseApi, idFromResourceUrl, type PokemonSummary } from '@pokedex/contracts';
 
 // --- listApp injects its endpoint into the host's shared baseApi at load. This is the RTK Query
 // federation proof: the endpoint + its generated hook register against the one shared cache the
@@ -21,7 +16,10 @@ const PAGE_SIZE = 24;
 
 // PokéAPI returns lower-case, hyphenated names ("mr-mime"); title-case each word for display.
 const formatName = (name: string) =>
-  name.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  name
+    .split('-')
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(' ');
 
 const listApi = baseApi.injectEndpoints({
   endpoints: build => ({
@@ -32,21 +30,21 @@ const listApi = baseApi.injectEndpoints({
         getNextPageParam: (lastPage, _allPages, lastPageParam) =>
           lastPage.length < PAGE_SIZE ? undefined : lastPageParam + PAGE_SIZE,
       },
-      async queryFn({pageParam}, _api, _extra, baseQuery) {
+      async queryFn({ pageParam }, _api, _extra, baseQuery) {
         const page = await baseQuery(`pokemon?limit=${PAGE_SIZE}&offset=${pageParam}`);
-        if (page.error) return {error: page.error};
+        if (page.error) return { error: page.error };
         // Guard the shape: a malformed 200 (missing results) shouldn't throw inside the queryFn.
-        const results = (page.data as {results?: {name: string; url: string}[]}).results ?? [];
+        const results = (page.data as { results?: { name: string; url: string }[] }).results ?? [];
         const details = await Promise.all(
-          results.map(r => baseQuery(`pokemon/${idFromResourceUrl(r.url)}`)),
+          results.map(r => baseQuery(`pokemon/${idFromResourceUrl(r.url)}`))
         );
         const data: PokemonSummary[] = [];
         for (const detail of details) {
-          if (detail.error) return {error: detail.error};
+          if (detail.error) return { error: detail.error };
           const p = detail.data as {
             id: number;
             name: string;
-            types?: {type: {name: string}}[];
+            types?: { type: { name: string } }[];
           };
           data.push({
             id: p.id,
@@ -55,11 +53,11 @@ const listApi = baseApi.injectEndpoints({
             spriteUri: artworkUri(p.id),
           });
         }
-        return {data};
+        return { data };
       },
       providesTags: ['PokemonList'],
     }),
   }),
 });
 
-export const {useGetPokemonListInfiniteQuery} = listApi;
+export const { useGetPokemonListInfiniteQuery } = listApi;

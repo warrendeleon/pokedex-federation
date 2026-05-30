@@ -13,9 +13,9 @@ module.exports = {
     './src/**/*.{js,jsx,ts,tsx}',
     path.join(
       path.dirname(require.resolve('@pokedex/ui/package.json')),
-      'src/**/*.{js,jsx,ts,tsx}',
+      'src/**/*.{js,jsx,ts,tsx}'
     ),
   ],
-  theme: {extend: {}},
+  theme: { extend: {} },
   plugins: [],
 };

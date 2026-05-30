@@ -5,9 +5,7 @@
 // rewrites (Bob handles paths). ---
 
 module.exports = {
-  presets: [
-    ['module:@react-native/babel-preset', {disableImportExportTransform: false}],
-  ],
+  presets: [['module:@react-native/babel-preset', { disableImportExportTransform: false }]],
   // --- nativewind/babel is the className plugin; it adds cssInterop calls for primitive
   // RN components. Must come after the RN preset so the JSX is already in a shape the
   // plugin can rewrite. ---

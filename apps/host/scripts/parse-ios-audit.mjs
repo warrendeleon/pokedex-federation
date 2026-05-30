@@ -4,16 +4,20 @@
 // line per issue (plus `A11Y_AUDITED|screen|clean` and `A11Y_ERROR|...`). This script reads the
 // xcodebuild log and writes accessibility-audit-ios.md: the native-layer counterpart to the Jest
 // report. Run: node scripts/parse-ios-audit.mjs <xcodebuild.log> [out.md]
-import {readFileSync, writeFileSync} from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 
 const logPath = process.argv[2] ?? '/tmp/ios-audit.log';
-const outPath = process.argv[3] ?? new URL('../accessibility-audit-ios.md', import.meta.url).pathname;
+const outPath =
+  process.argv[3] ??
+  new URL('../accessibility-audit-ios.md', import.meta.url).pathname;
 
 // Apple's audit types map onto the WCAG criteria the Jest layer defers to "rendered / native".
 const TYPE_WCAG = {
-  contrast: '1.4.3 Contrast (Minimum) / 1.4.11 Non-text Contrast - as actually drawn',
+  contrast:
+    '1.4.3 Contrast (Minimum) / 1.4.11 Non-text Contrast - as actually drawn',
   hitRegion: '2.5.8 Target Size (Minimum) - hit region as laid out',
-  sufficientElementDescription: '1.1.1 Non-text Content / 4.1.2 Name, Role, Value',
+  sufficientElementDescription:
+    '1.1.1 Non-text Content / 4.1.2 Name, Role, Value',
   elementDetection: '4.1.2 Name, Role, Value - element not detectable',
   textClipped: '1.4.4 Resize Text / 1.4.10 Reflow - text truncated at size',
   dynamicType: '1.4.4 Resize Text - does not honour Dynamic Type',
@@ -32,7 +36,12 @@ for (const raw of lines) {
     const key = `${m[1]}|${m[2]}|${m[3]}|${m[4]}`;
     if (!seen.has(key)) {
       seen.add(key);
-      findings.push({screen: m[1], type: m[2].trim(), element: m[3].trim(), detail: m[4].trim()});
+      findings.push({
+        screen: m[1],
+        type: m[2].trim(),
+        element: m[3].trim(),
+        detail: m[4].trim(),
+      });
     }
     continue;
   }
@@ -42,7 +51,7 @@ for (const raw of lines) {
     continue;
   }
   m = raw.match(/A11Y_ERROR\|([^|]*)\|(.*)$/);
-  if (m) errors.push({screen: m[1], detail: m[2].trim()});
+  if (m) errors.push({ screen: m[1], detail: m[2].trim() });
 }
 
 const screens = [...new Set([...audited, ...findings.map(f => f.screen)])];
@@ -54,28 +63,51 @@ const byScreen = screens.map(s => ({
 const out = [];
 out.push('# Native Accessibility Audit (iOS) - EAA / WCAG 2.1');
 out.push('');
-out.push('> Generated from `xcodebuild test -scheme HostUITests` on an iOS 17+ simulator. This is the');
-out.push('> native layer of the composite: Apple\'s `performAccessibilityAudit` checks the REAL rendered');
-out.push('> accessibility tree (contrast as drawn, hit region, clipped text, element descriptions,');
-out.push('> traits), the criteria the Jest layer deliberately defers here. An audit reports findings; it');
+out.push(
+  '> Generated from `xcodebuild test -scheme HostUITests` on an iOS 17+ simulator. This is the',
+);
+out.push(
+  "> native layer of the composite: Apple's `performAccessibilityAudit` checks the REAL rendered",
+);
+out.push(
+  '> accessibility tree (contrast as drawn, hit region, clipped text, element descriptions,',
+);
+out.push(
+  '> traits), the criteria the Jest layer deliberately defers here. An audit reports findings; it',
+);
 out.push('> is not a pass/fail gate.');
 out.push('');
 out.push('## Summary');
 out.push('');
-out.push(`- **Screens audited:** ${screens.length} (${screens.join(', ') || 'none'})`);
+out.push(
+  `- **Screens audited:** ${screens.length} (${screens.join(', ') || 'none'})`,
+);
 out.push(`- **Findings:** ${findings.length}`);
-if (errors.length) out.push(`- **Navigation gaps (screens not reached):** ${errors.length}`);
+if (errors.length)
+  out.push(`- **Navigation gaps (screens not reached):** ${errors.length}`);
 out.push('');
 
 if (findings.length === 0 && errors.length === 0) {
   out.push('## Reading a clean result');
   out.push('');
-  out.push('Clean is necessary, not sufficient. `performAccessibilityAudit` samples the rendered layer');
-  out.push('tree, and on React Native (Fabric) it under-reports on text it cannot sample: the Jest token');
-  out.push('matrix measures the midGrey id / subtitle labels at ~2.74:1 (below the 4.5:1 AA floor) yet the');
-  out.push('native contrast check does not flag them here. So a clean native pass does not certify');
-  out.push('conformance; it is one layer. The token layer (Jest) and a manual VoiceOver pass remain');
-  out.push('required, and the two known token findings (midGrey text, stat-bar fill) still stand.');
+  out.push(
+    'Clean is necessary, not sufficient. `performAccessibilityAudit` samples the rendered layer',
+  );
+  out.push(
+    'tree, and on React Native (Fabric) it under-reports on text it cannot sample: the Jest token',
+  );
+  out.push(
+    'matrix measures the midGrey id / subtitle labels at ~2.74:1 (below the 4.5:1 AA floor) yet the',
+  );
+  out.push(
+    'native contrast check does not flag them here. So a clean native pass does not certify',
+  );
+  out.push(
+    'conformance; it is one layer. The token layer (Jest) and a manual VoiceOver pass remain',
+  );
+  out.push(
+    'required, and the two known token findings (midGrey text, stat-bar fill) still stand.',
+  );
   out.push('');
 }
 
@@ -94,7 +126,7 @@ if (Object.keys(byType).length) {
 
 out.push('## By screen');
 out.push('');
-for (const {screen, findings: fs} of byScreen) {
+for (const { screen, findings: fs } of byScreen) {
   out.push(`### ${screen}`);
   out.push('');
   if (!fs.length) {
@@ -113,11 +145,15 @@ for (const {screen, findings: fs} of byScreen) {
 if (errors.length) {
   out.push('## Navigation gaps');
   out.push('');
-  out.push('Screens the audit could not reach (so they are NOT covered by this run):');
+  out.push(
+    'Screens the audit could not reach (so they are NOT covered by this run):',
+  );
   out.push('');
   for (const e of errors) out.push(`- **${e.screen}** - ${e.detail}`);
   out.push('');
 }
 
 writeFileSync(outPath, out.join('\n'));
-console.log(`Wrote ${outPath}: ${screens.length} screens, ${findings.length} findings, ${errors.length} nav gaps`);
+console.log(
+  `Wrote ${outPath}: ${screens.length} screens, ${findings.length} findings, ${errors.length} nav gaps`,
+);
