@@ -48,10 +48,13 @@ const REMOTE_NAMES = [
 ] as const;
 
 declare const __MF_CDN_BASE__: string;
+const PLACEHOLDER_CDN_BASE = 'https://cdn.example.com/mf';
 const PROD_CDN_BASE =
-  typeof __MF_CDN_BASE__ === 'string'
-    ? __MF_CDN_BASE__
-    : 'https://cdn.example.com/mf';
+  typeof __MF_CDN_BASE__ === 'string' ? __MF_CDN_BASE__ : PLACEHOLDER_CDN_BASE;
+// CDN mode is normally release-only. But when a REAL CDN base is configured (MF_CDN_BASE set to
+// something other than the placeholder), use CDN mode even in a dev build, so the green CDN path can
+// be demoed against a local `build-cdn.mjs` server without making a release build.
+const CDN_CONFIGURED = PROD_CDN_BASE !== PLACEHOLDER_CDN_BASE;
 const PROBE_TIMEOUT_MS = 1500;
 
 export type FederationMode = 'dev' | 'cdn' | 'bundled';
@@ -175,7 +178,7 @@ export async function initializeFederation(): Promise<{
   if (initialized) return { mode: status.mode };
   initialized = true;
 
-  if (__DEV__) {
+  if (__DEV__ && !CDN_CONFIGURED) {
     status = { mode: 'dev', source: 'Re.Pack dev servers', versions: {} };
     return { mode: status.mode };
   }

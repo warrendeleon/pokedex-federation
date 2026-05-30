@@ -40,14 +40,14 @@ export const EMBEDDED_MANIFESTS: Record<
         {
           id: 'listApp:@pokedex/contracts',
           name: '@pokedex/contracts',
-          version: '0.1.3',
+          version: '0.2.0',
           singleton: true,
-          requiredVersion: '^0.1.3',
+          requiredVersion: '^0.2.0',
           assets: {
             js: {
               async: [],
               sync: [
-                'node_modules_pokedex_contracts_dist_index_js.chunk.bundle',
+                'vendors-node_modules_pokedex_contracts_dist_index_js.chunk.bundle',
               ],
             },
             css: {
@@ -60,9 +60,9 @@ export const EMBEDDED_MANIFESTS: Record<
         {
           id: 'listApp:@pokedex/ui',
           name: '@pokedex/ui',
-          version: '0.4.1',
+          version: '0.9.2',
           singleton: true,
-          requiredVersion: '^0.4.1',
+          requiredVersion: '^0.9.2',
           assets: {
             js: {
               async: [],
@@ -184,6 +184,26 @@ export const EMBEDDED_MANIFESTS: Record<
               async: [],
               sync: [
                 'vendors-node_modules_react-navigation_native_lib_module_index_js.chunk.bundle',
+              ],
+            },
+            css: {
+              async: [],
+              sync: [],
+            },
+          },
+          fallback: '',
+        },
+        {
+          id: 'listApp:@reduxjs/toolkit',
+          name: '@reduxjs/toolkit',
+          version: '2.12.0',
+          singleton: true,
+          requiredVersion: '^2.12.0',
+          assets: {
+            js: {
+              async: [],
+              sync: [
+                'vendors-node_modules_reduxjs_toolkit_dist_redux-toolkit_modern_mjs.chunk.bundle',
               ],
             },
             css: {
@@ -598,6 +618,26 @@ export const EMBEDDED_MANIFESTS: Record<
           fallback: '',
         },
         {
+          id: 'listApp:react-redux',
+          name: 'react-redux',
+          version: '9.3.0',
+          singleton: true,
+          requiredVersion: '^9.3.0',
+          assets: {
+            js: {
+              async: [],
+              sync: [
+                'vendors-node_modules_react-redux_dist_react-redux_legacy-esm_js.chunk.bundle',
+              ],
+            },
+            css: {
+              async: [],
+              sync: [],
+            },
+          },
+          fallback: '',
+        },
+        {
           id: 'listApp:react',
           name: 'react',
           version: '19.2.3',
@@ -635,6 +675,7 @@ export const EMBEDDED_MANIFESTS: Record<
                 'node_modules_react-native-reanimated_src_jestUtils_sync_recursive-node_modules_react-native-w-5cdebc.chunk.bundle',
                 'node_modules_invariant_browser_js-node_modules_react-native_Libraries_Utilities_Platform_ios_-501d8b1.chunk.bundle',
                 'node_modules_invariant_browser_js-node_modules_react-native_Libraries_Utilities_Platform_ios_-501d8b0.chunk.bundle',
+                'vendors-node_modules_immer_dist_immer_legacy-esm_js-node_modules_reselect_dist_cjs_index_js.chunk.bundle',
               ],
             },
             css: {
@@ -675,14 +716,14 @@ export const EMBEDDED_MANIFESTS: Record<
         {
           id: 'partyApp:@pokedex/contracts',
           name: '@pokedex/contracts',
-          version: '0.1.3',
+          version: '0.2.0',
           singleton: true,
-          requiredVersion: '^0.1.3',
+          requiredVersion: '^0.2.0',
           assets: {
             js: {
               async: [],
               sync: [
-                'node_modules_pokedex_contracts_dist_index_js.chunk.bundle',
+                'vendors-node_modules_pokedex_contracts_dist_index_js.chunk.bundle',
               ],
             },
             css: {
@@ -695,9 +736,9 @@ export const EMBEDDED_MANIFESTS: Record<
         {
           id: 'partyApp:@pokedex/ui',
           name: '@pokedex/ui',
-          version: '0.4.1',
+          version: '0.9.2',
           singleton: true,
-          requiredVersion: '^0.4.1',
+          requiredVersion: '^0.9.2',
           assets: {
             js: {
               async: [],
@@ -819,6 +860,26 @@ export const EMBEDDED_MANIFESTS: Record<
               async: [],
               sync: [
                 'vendors-node_modules_react-navigation_native_lib_module_index_js.chunk.bundle',
+              ],
+            },
+            css: {
+              async: [],
+              sync: [],
+            },
+          },
+          fallback: '',
+        },
+        {
+          id: 'partyApp:@reduxjs/toolkit',
+          name: '@reduxjs/toolkit',
+          version: '2.12.0',
+          singleton: true,
+          requiredVersion: '^2.12.0',
+          assets: {
+            js: {
+              async: [],
+              sync: [
+                'vendors-node_modules_reduxjs_toolkit_dist_redux-toolkit_modern_mjs.chunk.bundle',
               ],
             },
             css: {
@@ -1290,6 +1351,7 @@ export const EMBEDDED_MANIFESTS: Record<
                 'node_modules_react-native-reanimated_src_jestUtils_sync_recursive-node_modules_react-native-w-5cdebc.chunk.bundle',
                 'node_modules_invariant_browser_js-node_modules_react-native_Libraries_Utilities_Platform_ios_-501d8b1.chunk.bundle',
                 'node_modules_invariant_browser_js-node_modules_react-native_Libraries_Utilities_Platform_ios_-501d8b0.chunk.bundle',
+                'vendors-node_modules_immer_dist_immer_legacy-esm_js-node_modules_reselect_dist_cjs_index_js.chunk.bundle',
               ],
             },
             css: {
@@ -1330,14 +1392,14 @@ export const EMBEDDED_MANIFESTS: Record<
         {
           id: 'regionsApp:@pokedex/contracts',
           name: '@pokedex/contracts',
-          version: '0.1.3',
+          version: '0.2.0',
           singleton: true,
-          requiredVersion: '^0.1.3',
+          requiredVersion: '^0.2.0',
           assets: {
             js: {
               async: [],
               sync: [
-                'node_modules_pokedex_contracts_dist_index_js.chunk.bundle',
+                'vendors-node_modules_pokedex_contracts_dist_index_js.chunk.bundle',
               ],
             },
             css: {
@@ -1350,9 +1412,9 @@ export const EMBEDDED_MANIFESTS: Record<
         {
           id: 'regionsApp:@pokedex/ui',
           name: '@pokedex/ui',
-          version: '0.4.1',
+          version: '0.9.2',
           singleton: true,
-          requiredVersion: '^0.4.1',
+          requiredVersion: '^0.9.2',
           assets: {
             js: {
               async: [],
@@ -1474,6 +1536,26 @@ export const EMBEDDED_MANIFESTS: Record<
               async: [],
               sync: [
                 'vendors-node_modules_react-navigation_native_lib_module_index_js.chunk.bundle',
+              ],
+            },
+            css: {
+              async: [],
+              sync: [],
+            },
+          },
+          fallback: '',
+        },
+        {
+          id: 'regionsApp:@reduxjs/toolkit',
+          name: '@reduxjs/toolkit',
+          version: '2.12.0',
+          singleton: true,
+          requiredVersion: '^2.12.0',
+          assets: {
+            js: {
+              async: [],
+              sync: [
+                'vendors-node_modules_reduxjs_toolkit_dist_redux-toolkit_modern_mjs.chunk.bundle',
               ],
             },
             css: {
@@ -1888,6 +1970,26 @@ export const EMBEDDED_MANIFESTS: Record<
           fallback: '',
         },
         {
+          id: 'regionsApp:react-redux',
+          name: 'react-redux',
+          version: '9.3.0',
+          singleton: true,
+          requiredVersion: '^9.3.0',
+          assets: {
+            js: {
+              async: [],
+              sync: [
+                'vendors-node_modules_react-redux_dist_react-redux_legacy-esm_js.chunk.bundle',
+              ],
+            },
+            css: {
+              async: [],
+              sync: [],
+            },
+          },
+          fallback: '',
+        },
+        {
           id: 'regionsApp:react',
           name: 'react',
           version: '19.2.3',
@@ -1925,6 +2027,7 @@ export const EMBEDDED_MANIFESTS: Record<
                 'node_modules_react-native-reanimated_src_jestUtils_sync_recursive-node_modules_react-native-w-5cdebc.chunk.bundle',
                 'node_modules_invariant_browser_js-node_modules_react-native_Libraries_Utilities_Platform_ios_-501d8b1.chunk.bundle',
                 'node_modules_invariant_browser_js-node_modules_react-native_Libraries_Utilities_Platform_ios_-501d8b0.chunk.bundle',
+                'vendors-node_modules_immer_dist_immer_legacy-esm_js-node_modules_reselect_dist_cjs_index_js.chunk.bundle',
               ],
             },
             css: {
@@ -1963,11 +2066,31 @@ export const EMBEDDED_MANIFESTS: Record<
       },
       shared: [
         {
+          id: 'detailApp:@pokedex/contracts',
+          name: '@pokedex/contracts',
+          version: '0.2.0',
+          singleton: true,
+          requiredVersion: '^0.2.0',
+          assets: {
+            js: {
+              async: [],
+              sync: [
+                'vendors-node_modules_pokedex_contracts_dist_index_js.chunk.bundle',
+              ],
+            },
+            css: {
+              async: [],
+              sync: [],
+            },
+          },
+          fallback: '',
+        },
+        {
           id: 'detailApp:@pokedex/ui',
           name: '@pokedex/ui',
-          version: '0.4.1',
+          version: '0.9.2',
           singleton: true,
-          requiredVersion: '^0.4.1',
+          requiredVersion: '^0.9.2',
           assets: {
             js: {
               async: [],
@@ -2049,6 +2172,26 @@ export const EMBEDDED_MANIFESTS: Record<
               async: [],
               sync: [
                 'vendors-node_modules_react-native_virtualized-lists_index_js.chunk.bundle',
+              ],
+            },
+            css: {
+              async: [],
+              sync: [],
+            },
+          },
+          fallback: '',
+        },
+        {
+          id: 'detailApp:@reduxjs/toolkit',
+          name: '@reduxjs/toolkit',
+          version: '2.12.0',
+          singleton: true,
+          requiredVersion: '^2.12.0',
+          assets: {
+            js: {
+              async: [],
+              sync: [
+                'vendors-node_modules_reduxjs_toolkit_dist_redux-toolkit_modern_mjs.chunk.bundle',
               ],
             },
             css: {
@@ -2419,6 +2562,26 @@ export const EMBEDDED_MANIFESTS: Record<
           fallback: '',
         },
         {
+          id: 'detailApp:react-redux',
+          name: 'react-redux',
+          version: '9.3.0',
+          singleton: true,
+          requiredVersion: '^9.3.0',
+          assets: {
+            js: {
+              async: [],
+              sync: [
+                'vendors-node_modules_react-redux_dist_react-redux_legacy-esm_js.chunk.bundle',
+              ],
+            },
+            css: {
+              async: [],
+              sync: [],
+            },
+          },
+          fallback: '',
+        },
+        {
           id: 'detailApp:react',
           name: 'react',
           version: '19.2.3',
@@ -2452,6 +2615,7 @@ export const EMBEDDED_MANIFESTS: Record<
                 'vendors-node_modules_react-native_Libraries_TurboModule_TurboModuleRegistry_js.chunk.bundle',
                 'vendors-node_modules_react-native_Libraries_EventEmitter_NativeEventEmitter_js-node_modules_r-29a2cc.chunk.bundle',
                 'node_modules_swc_helpers_cjs__class_private_field_loose_base_cjs-node_modules_swc_helpers_cjs-bfa6d60.chunk.bundle',
+                'vendors-node_modules_immer_dist_immer_legacy-esm_js-node_modules_reselect_dist_cjs_index_js.chunk.bundle',
                 'node_modules_invariant_browser_js-node_modules_react-native_Libraries_Utilities_Platform_ios_-501d8b0.chunk.bundle',
               ],
             },
