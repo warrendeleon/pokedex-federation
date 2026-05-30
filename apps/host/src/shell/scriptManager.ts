@@ -1,9 +1,10 @@
-import {ScriptManager, Script} from '@callstack/repack/client';
 import {NativeModules, Platform} from 'react-native';
-import {registerPlugins, registerRemotes} from '@module-federation/runtime';
+import {ScriptManager} from '@callstack/repack/client';
 import type {ModuleFederationRuntimePlugin} from '@module-federation/runtime';
-import {mmkvStorage} from './storage';
+import {registerPlugins, registerRemotes} from '@module-federation/runtime';
+
 import {BUNDLED_VERSIONS, EMBEDDED_MANIFESTS} from './embedded-manifests';
+import {mmkvStorage} from './storage';
 
 // --- The federation's operational layer: how remotes are located + version-resolved per launch,
 // and how the app degrades when the CDN is unreachable.
@@ -193,7 +194,9 @@ export async function forceReloadRemote(remoteName: string): Promise<void> {
   }
   try {
     (globalThis as Record<string, unknown>)[remoteName] = undefined;
-  } catch {}
+  } catch {
+    // best-effort: clearing the federation global is non-critical, ignore failures
+  }
   try {
     await ScriptManager.shared.invalidateScripts([remoteName]);
   } catch (e) {

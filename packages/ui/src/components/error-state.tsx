@@ -1,8 +1,9 @@
 import React from 'react';
+
+import {Button, ButtonText} from './ui/button';
 import {Center} from './ui/center';
 import {Heading} from './ui/heading';
 import {Text} from './ui/text';
-import {Button, ButtonText} from './ui/button';
 
 // --- Error state with retry. Composed from Gluestack Center + Heading + Text + Button.
 // Variant tracks ScreenContainer so dark-themed screens (Party) get a dark error too. ---

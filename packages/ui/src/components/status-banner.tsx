@@ -1,5 +1,6 @@
 import React, {useEffect} from 'react';
 import {AccessibilityInfo} from 'react-native';
+
 import {Box} from './ui/box';
 import {Text} from './ui/text';
 

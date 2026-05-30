@@ -1,7 +1,9 @@
 import React from 'react';
+
+import {bgClassForType, textOnTypeClass} from '../tokens/typeColours';
+
 import {Box} from './ui/box';
 import {Text} from './ui/text';
-import {bgClassForType, textOnTypeClass} from '../tokens/typeColours';
 
 // --- Coloured pill that displays a Pokémon type (Fire, Water, etc). Both background and
 // text colour come from token classes (bg-type-<name> + text-white/black) defined in the

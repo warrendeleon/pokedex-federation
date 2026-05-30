@@ -1,8 +1,8 @@
-// --- Repo-wide accessibility lint. Run uniformly across every app and package with
-// `--no-eslintrc --config .eslintrc.js`, so one config and one install covers the whole monorepo
-// (which has no workspaces) without each remote needing its own ESLint. This is the static a11y
-// layer of the composite: missing labels, invalid roles, nested touchables, caught at author time.
-// It is intentionally a11y-only; each app keeps its own style linting separately. ---
+// --- Repo-wide lint, run uniformly across every app and package with `eslint --no-eslintrc --config
+// .eslintrc.js` (one config, one install; the monorepo has no workspaces). Layers typescript-eslint
+// recommended, simple-import-sort and Prettier compatibility on top of the React Native accessibility
+// rules. Stays on ESLint 8 / eslintrc rather than ESLint 9 flat config because
+// eslint-plugin-react-native-a11y has no ESLint 9 build. ---
 module.exports = {
   root: true,
   parser: '@typescript-eslint/parser',
@@ -11,17 +11,43 @@ module.exports = {
     sourceType: 'module',
     ecmaFeatures: {jsx: true},
   },
+  env: {es2021: true, node: true, jest: true},
+  globals: {__DEV__: 'readonly'},
   settings: {react: {version: 'detect'}},
-  extends: ['plugin:react-native-a11y/all'],
-  // react-hooks is declared (not enforced) only so existing `// eslint-disable react-hooks/...`
-  // directives in app code resolve under this a11y-only config instead of erroring as unknown rules.
-  // Hooks linting itself stays with each app's own ESLint config.
-  plugins: ['react-hooks'],
+  plugins: ['@typescript-eslint', 'simple-import-sort', 'react-hooks'],
+  extends: [
+    'eslint:recommended',
+    'plugin:@typescript-eslint/recommended',
+    'plugin:react-native-a11y/all',
+    'prettier', // eslint-config-prettier: turn off formatting rules Prettier owns. Must stay last.
+  ],
   rules: {
-    // Optional in WCAG, and Apple's HIG warns against overusing hints (read after the label, they
-    // become chatter). Add them where they help, do not force one onto every labelled element.
+    // Optional in WCAG, and Apple's HIG warns against overusing hints. Add them where they help.
     'react-native-a11y/has-accessibility-hint': 'off',
+    'simple-import-sort/imports': [
+      'error',
+      {
+        groups: [
+          ['^\\u0000'], // side-effect imports
+          ['^react', '^@?\\w'], // react + other external packages
+          ['^@pokedex(/.*|$)'], // internal @pokedex/* packages
+          ['^\\.\\.(?!/?$)', '^\\.\\./?$'], // parent imports
+          ['^\\./(?=.*/)(?!/?$)', '^\\.(?!/?$)', '^\\./?$'], // relative imports
+        ],
+      },
+    ],
+    'simple-import-sort/exports': 'error',
   },
+  overrides: [
+    {
+      // The host renders federated components resolved at RUNTIME; the boundary cannot know a remote
+      // screen's prop types statically (that's the whole point of Module Federation), so
+      // React.ComponentType<any> is the correct, type-honest representation here. Scoped to this one
+      // file; no-explicit-any stays an error everywhere else.
+      files: ['**/shell/FederatedTabBoundary.tsx'],
+      rules: {'@typescript-eslint/no-explicit-any': 'off'},
+    },
+  ],
   ignorePatterns: [
     '**/lib/**',
     '**/node_modules/**',

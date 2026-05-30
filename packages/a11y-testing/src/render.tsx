@@ -4,7 +4,7 @@ import type {ReactElement} from 'react';
 // the rendered-style a11y assertions (contrast, touch targets) read actual colours and sizes.
 import {render as nativewindRender} from 'nativewind/test';
 
-export {screen, fireEvent, within, act} from 'nativewind/test';
+export {act,fireEvent, screen, within} from 'nativewind/test';
 
 /**
  * Bind a render to a design system's token theme (its Tailwind preset's `theme`), so that the

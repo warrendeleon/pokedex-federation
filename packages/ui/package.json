@@ -23,8 +23,7 @@
     "prepublishOnly": "npm run build",
     "typecheck": "tsc --noEmit",
     "test": "jest",
-    "accessibility-report": "jest --reporters=default --reporters=@pokedex/a11y-testing/reporter",
-    "lint": "eslint src --ext .ts,.tsx"
+    "accessibility-report": "jest --reporters=default --reporters=@pokedex/a11y-testing/reporter"
   },
   "publishConfig": {
     "registry": "http://localhost:4873/"

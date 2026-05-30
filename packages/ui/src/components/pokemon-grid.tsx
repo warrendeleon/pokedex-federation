@@ -1,6 +1,7 @@
 import React from 'react';
 import {ActivityIndicator} from 'react-native';
 import {FlashList} from '@shopify/flash-list';
+
 import {Box} from './ui/box';
 import {PokemonCard} from './pokemon-card';
 

@@ -3,18 +3,21 @@
 // federates this exposed stack, so without this import the remote's own classNames would silently
 // no-op on the host-provided Gluestack singletons (same fix as detail/regions).
 import '../global.css';
+
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {useSelector} from 'react-redux';
-import {
-  ScreenContainer,
-  PokemonGrid,
-  Box,
-  LoadingState,
-  ErrorState,
-} from '@pokedex/ui';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
+
 import {shellNavigate} from '@pokedex/contracts';
+import {
+  Box,
+  ErrorState,
+  LoadingState,
+  PokemonGrid,
+  ScreenContainer,
+} from '@pokedex/ui';
+
 import {useGetPokemonListInfiniteQuery} from './listApi';
 
 // --- listApp's exposed navigation stack: the Pokédex grid, loaded into the host's tab via Module

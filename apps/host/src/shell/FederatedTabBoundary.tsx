@@ -1,5 +1,7 @@
 import React, {Suspense} from 'react';
-import {LoadingState, ErrorState} from '@pokedex/ui';
+
+import {ErrorState,LoadingState} from '@pokedex/ui';
+
 import {forceReloadRemote} from './scriptManager';
 
 // --- Owns the lifecycle of one federated mount point. Three responsibilities:

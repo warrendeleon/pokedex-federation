@@ -5,17 +5,23 @@
   "description": "Repo-level dev tooling only: husky hooks, lint-staged, and a repo-wide accessibility lint. The apps and packages are otherwise standalone (no workspaces); each builds and publishes on its own.",
   "scripts": {
     "prepare": "husky",
-    "lint:a11y": "eslint --no-eslintrc --config .eslintrc.js --ext .ts,.tsx packages/*/src apps/*/src",
+    "lint": "eslint --no-eslintrc --config .eslintrc.js --ext .ts,.tsx packages/*/src apps/*/src",
+    "lint:fix": "npm run lint -- --fix",
     "typecheck": "for d in packages/ui apps/host apps/list apps/party apps/regions apps/detail; do echo \"# typecheck $d\"; (cd \"$d\" && npx tsc --noEmit) || exit 1; done",
     "test": "cd packages/ui && npm test"
   },
   "devDependencies": {
-    "@typescript-eslint/parser": "^7.18.0",
+    "@typescript-eslint/eslint-plugin": "^8.60.0",
+    "@typescript-eslint/parser": "^8.60.0",
     "eslint": "^8.57.1",
+    "eslint-config-prettier": "^9.1.2",
     "eslint-plugin-react": "^7.37.2",
     "eslint-plugin-react-hooks": "^4.6.2",
     "eslint-plugin-react-native-a11y": "^3.5.1",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
     "husky": "^9.1.7",
-    "lint-staged": "^15.2.10"
+    "lint-staged": "^15.2.10",
+    "prettier": "^3.8.3",
+    "prettier-plugin-tailwindcss": "^0.6.14"
   }
 }

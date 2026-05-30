@@ -1,12 +1,14 @@
 import React from 'react';
 import {type ImageSourcePropType} from 'react-native';
-import {Card} from './ui/card';
+
+import {tintBgClassForType} from '../tokens/typeColours';
+
 import {Box} from './ui/box';
-import {Text} from './ui/text';
+import {Card} from './ui/card';
 import {Image} from './ui/image';
 import {Pressable} from './ui/pressable';
+import {Text} from './ui/text';
 import {TypeBadge} from './type-badge';
-import {tintBgClassForType} from '../tokens/typeColours';
 
 // --- The Pokédex grid's primary card. White rounded background, hashed ID, circular tinted
 // sprite area (background tint is the primary type's colour at 30% opacity so the sprite

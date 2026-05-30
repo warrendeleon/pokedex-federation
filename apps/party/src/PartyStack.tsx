@@ -3,22 +3,24 @@
 // federates this exposed stack, so without this import the remote's own classNames would silently
 // no-op on the host-provided Gluestack singletons (same fix as detail/regions).
 import '../global.css';
+
 import React from 'react';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {useDispatch, useSelector} from 'react-redux';
+import {createNativeStackNavigator} from '@react-navigation/native-stack';
+
+import {CROSS_MODULE_ACTIONS,shellNavigate} from '@pokedex/contracts';
 import {
-  ScreenContainer,
-  PokemonGrid,
   Box,
-  Center,
-  Heading,
-  Text,
-  VStack,
   Button,
   ButtonText,
+  Center,
+  Heading,
+  PokemonGrid,
   type PokemonGridEntry,
+  ScreenContainer,
+  Text,
+  VStack,
 } from '@pokedex/ui';
-import {shellNavigate, CROSS_MODULE_ACTIONS} from '@pokedex/contracts';
 
 // --- partyApp's exposed stack: the party manager. Dark-themed (ScreenContainer variant) to give
 // the tab a strong visual identity. It renders the host-owned party slice (members added from the

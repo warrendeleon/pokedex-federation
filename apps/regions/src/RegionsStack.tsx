@@ -3,29 +3,32 @@
 // graph the host pulls when it federates the exposed stack, so without this import the remote's
 // own classNames would silently no-op on the host-provided Gluestack singletons. ---
 import '../global.css';
+
 import React from 'react';
 import {
   createNativeStackNavigator,
   type NativeStackScreenProps,
 } from '@react-navigation/native-stack';
+
+import {artworkUri,shellNavigate} from '@pokedex/contracts';
 import {
-  ScreenContainer,
-  PokemonGrid,
-  FlashList,
   Box,
-  VStack,
-  HStack,
-  Heading,
-  Text,
   Card,
-  Pressable,
   Divider,
-  LoadingState,
   ErrorState,
+  FlashList,
+  Heading,
+  HStack,
+  LoadingState,
+  PokemonGrid,
   type PokemonGridEntry,
+  Pressable,
+  ScreenContainer,
+  Text,
+  VStack,
 } from '@pokedex/ui';
-import {shellNavigate, artworkUri} from '@pokedex/contracts';
-import {useGetRegionsQuery, useGetRegionDexQuery} from './regionsApi';
+
+import {useGetRegionDexQuery,useGetRegionsQuery} from './regionsApi';
 
 // --- regionsApp's exposed stack: browse the Pokémon regions, then a region's Pokédex. This
 // remote earns the routing table its keep twice over: regions are a different entity, navigating

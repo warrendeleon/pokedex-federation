@@ -1,6 +1,7 @@
 import React from 'react';
-import {SafeAreaView} from './ui/safe-area-view';
+
 import {Box} from './ui/box';
+import {SafeAreaView} from './ui/safe-area-view';
 
 // --- Top-level wrapper every federated screen mounts inside. Owns the safe-area handling
 // (top + bottom by default; explicitly opt-out for screens with their own tinted header that

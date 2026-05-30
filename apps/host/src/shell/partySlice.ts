@@ -1,4 +1,5 @@
 import {createAction, createSlice, type PayloadAction} from '@reduxjs/toolkit';
+
 import {CROSS_MODULE_ACTIONS} from '@pokedex/contracts';
 
 // --- Typed action creator for the cross-module QuickBattle result. createAction binds the

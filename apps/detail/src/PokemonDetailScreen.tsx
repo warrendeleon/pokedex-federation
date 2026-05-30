@@ -4,9 +4,12 @@
 // not also present in host-scanned host / @pokedex/ui source) never register and silently no-op.
 // Importing it from the exposed module guarantees it loads whenever the screen does. ---
 import '../global.css';
+
 import React, {useEffect, useState} from 'react';
 import {ScrollView} from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
+
+import {CROSS_MODULE_ACTIONS} from '@pokedex/contracts';
 import {
   bgClassForType,
   Box,
@@ -26,7 +29,7 @@ import {
   TypeBadge,
   VStack,
 } from '@pokedex/ui';
-import {CROSS_MODULE_ACTIONS} from '@pokedex/contracts';
+
 import {useGetPokemonDetailQuery} from './detailApi';
 
 // --- detailApp's exposed screen: a single Pokémon's detail, fetched from the host's shared RTK

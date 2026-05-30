@@ -1,6 +1,6 @@
 import {
-  baseApi,
   artworkUri,
+  baseApi,
   idFromResourceUrl,
   type PokemonSummary,
 } from '@pokedex/contracts';

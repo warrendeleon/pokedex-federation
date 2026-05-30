@@ -1,7 +1,9 @@
 import React from 'react';
+
+import {bgClassForType} from '../tokens/typeColours';
+
 import {Box} from './ui/box';
 import {Text} from './ui/text';
-import {bgClassForType} from '../tokens/typeColours';
 
 // --- A single base-stat row: label, a track with a type-coloured fill proportional to the value,
 // and the value. Lives in the design system (not the detail remote) so its token classes are

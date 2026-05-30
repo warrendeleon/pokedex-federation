@@ -1,5 +1,6 @@
 import React from 'react';
 import {StyleSheet, Text, View} from 'react-native';
+
 import {getFederationStatus} from './scriptManager';
 
 // --- The operational layer's at-a-glance indicator: which mode the federation booted in and the

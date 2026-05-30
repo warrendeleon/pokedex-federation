@@ -1,10 +1,13 @@
 import {createNavigationContainerRef} from '@react-navigation/native';
+
 import {
   ROUTE_REGISTRY,
   type ShellNavigateFn,
   type ShellNavigateResult,
 } from '@pokedex/contracts';
+
 import ShellNavigationModule from '../../specs/NativeShellNavigationModule';
+
 import type {RootStackParamList} from './navigationTypes';
 
 // --- Host-side implementation of shell.navigateTo. Resolves a destination name against
@@ -75,7 +78,7 @@ export function resolveDeepLink(
   url: string,
 ): {destination: string; params?: Record<string, unknown>} | null {
   // Strip the scheme (pokedex://); for a universal link, also drop a leading "host.tld" segment.
-  let rest = url.replace(/^[a-z][a-z0-9+.\-]*:\/\//i, '');
+  let rest = url.replace(/^[a-z][a-z0-9+.-]*:\/\//i, '');
   const firstSlash = rest.indexOf('/');
   const head = firstSlash === -1 ? rest : rest.slice(0, firstSlash);
   if (head.includes('.')) {

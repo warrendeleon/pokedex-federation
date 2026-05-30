@@ -5,6 +5,7 @@ import {
   createNativeStackNavigator,
   type NativeStackScreenProps,
 } from '@react-navigation/native-stack';
+
 import {FederatedTabBoundary} from './FederatedTabBoundary';
 import type {RootStackParamList, RootTabParamList} from './navigationTypes';
 

@@ -1,9 +1,11 @@
 import type {Middleware} from '@reduxjs/toolkit';
+
 import {
   BRIDGE_KEYS,
-  MODULES,
   type BridgeEnvelope,
+  MODULES,
 } from '@pokedex/contracts';
+
 import StoreObserverModule from '../../specs/NativeStoreObserverModule';
 
 // --- Redux middleware that pushes structured envelopes to the native side after every action.

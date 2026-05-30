@@ -1,4 +1,4 @@
-import {baseApi, artworkUri, type PokemonDetailData} from '@pokedex/contracts';
+import {artworkUri, baseApi, type PokemonDetailData} from '@pokedex/contracts';
 
 // --- detailApp injects its endpoint into the host's shared baseApi. Because the list already
 // populated the shared cache, navigating to a Pokémon the list loaded is instant (RTK Query

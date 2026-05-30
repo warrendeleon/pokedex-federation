@@ -1,19 +1,21 @@
 import {combineSlices, configureStore} from '@reduxjs/toolkit';
 import {
-  persistStore,
-  persistReducer,
   createMigrate,
   FLUSH,
-  REHYDRATE,
   PAUSE,
   PERSIST,
+  type PersistedState,
+  persistReducer,
+  persistStore,
   PURGE,
   REGISTER,
-  type PersistedState,
+  REHYDRATE,
 } from 'redux-persist';
+
 import {baseApi} from '@pokedex/contracts';
-import partySlice from './partySlice';
+
 import {nativeBridgeMiddleware} from './nativeBridge';
+import partySlice from './partySlice';
 import {mmkvStorage} from './storage';
 
 // --- The host store. combineSlices (RTK 2.x) gives us runtime slice composition: federated
