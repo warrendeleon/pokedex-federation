@@ -6,6 +6,7 @@
     "start:remote": "react-native start --config rspack.config.mjs --port 8082",
     "bundle:ios": "react-native bundle --platform ios --entry-file src/index.js --bundle-output build/ios/listApp.jsbundle --config rspack.config.mjs",
     "bundle:ios:prod": "react-native bundle --platform ios --dev false --entry-file src/index.js --bundle-output build/ios/listApp.jsbundle --config rspack.config.mjs",
+    "bundle:android:prod": "react-native bundle --platform android --dev false --entry-file src/index.js --bundle-output build/android/listApp.android.bundle --config rspack.config.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

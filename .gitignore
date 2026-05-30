@@ -37,3 +37,8 @@ verdaccio-storage/
 
 # Local stand-in CDN assembled by tools/build-cdn.mjs
 cdn-root/
+
+# Code-signing keys (chunk RSA + version-map Ed25519). Build-machine material only; the public
+# halves the app actually needs are embedded in committed source (iOS Info.plist, Android
+# strings.xml, scriptManager.ts). Generate your own with tools/gen-signing-keys.mjs; never commit.
+code-signing/

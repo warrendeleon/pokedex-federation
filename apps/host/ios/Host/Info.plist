@@ -48,6 +48,16 @@
 	<string></string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
+	<key>RepackPublicKey</key>
+	<string>-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArtm2UMnz0TEtfJU5fwOY
+RbDAtMFg+BpAIuiyQ/VTgFp9+hqD6Uo6UPXIJ+BEn32MPqaK+APd0szlEx9tosn2
+GVXWnETjK7Z7G5jzx43YZyUaVpu5gCVgM7s7VezgoQIuN+ATQFLqePgYGCPyt6lL
+7PWc71nFXWMDlnpO75p7F5GkmZzarXkLheqlqF6cp0oDiZhrls+Zma8QARdUEbSX
+lUOhJA18xSRF56ujz5i2/sjtETAcdBsE9wV91rdpL2DnI/tYBtAIYjKG/ROZVr6G
+/E++KOGzDKzuEYbAepxjiZlNhIU0BakTNh4kY2fjj7YHuhhkW8xXj8Y0CZqSehs8
+BwIDAQAB
+-----END PUBLIC KEY-----</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>

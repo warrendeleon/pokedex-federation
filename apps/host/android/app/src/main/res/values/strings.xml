@@ -1,3 +1,9 @@
 <resources>
     <string name="app_name">Host</string>
+    <!-- RSA public key (base64 DER, headers stripped) used by Re.Pack's ScriptManager to verify
+         the RS256 signature on CDN/offline remote chunks before executing them. Single-line:
+         Android string resources collapse newlines, and the verifier strips headers + newlines
+         before base64-decoding. The matching private key signs chunks at build time and is never
+         committed. -->
+    <string name="RepackPublicKey">MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArtm2UMnz0TEtfJU5fwOYRbDAtMFg+BpAIuiyQ/VTgFp9+hqD6Uo6UPXIJ+BEn32MPqaK+APd0szlEx9tosn2GVXWnETjK7Z7G5jzx43YZyUaVpu5gCVgM7s7VezgoQIuN+ATQFLqePgYGCPyt6lL7PWc71nFXWMDlnpO75p7F5GkmZzarXkLheqlqF6cp0oDiZhrls+Zma8QARdUEbSXlUOhJA18xSRF56ujz5i2/sjtETAcdBsE9wV91rdpL2DnI/tYBtAIYjKG/ROZVr6G/E++KOGzDKzuEYbAepxjiZlNhIU0BakTNh4kY2fjj7YHuhhkW8xXj8Y0CZqSehs8BwIDAQAB</string>
 </resources>

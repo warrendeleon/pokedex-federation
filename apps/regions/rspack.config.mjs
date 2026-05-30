@@ -70,6 +70,15 @@ export default Repack.defineRspackConfig(env => {
       new rspack.DefinePlugin({
         __REMOTE_VERSION__: JSON.stringify(REMOTE_VERSION),
       }),
+      // Sign each chunk (RS256 JWT of its hash) in prod builds so the host's ScriptManager can
+      // verify integrity before executing CDN- or offline-loaded remote code. Dev stays unsigned.
+      ...(mode === 'production'
+        ? [
+            new Repack.plugins.CodeSigningPlugin({
+              privateKeyPath: path.resolve(__dirname, '../../code-signing/private-key.pem'),
+            }),
+          ]
+        : []),
     ],
   };
 });

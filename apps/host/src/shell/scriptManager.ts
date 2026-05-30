@@ -4,7 +4,8 @@ import type { ModuleFederationRuntimePlugin } from '@module-federation/runtime';
 import { registerPlugins, registerRemotes } from '@module-federation/runtime';
 
 import { BUNDLED_VERSIONS, EMBEDDED_MANIFESTS } from './embedded-manifests';
-import { mmkvStorage } from './storage';
+import { mmkvStorage, mmkvSync } from './storage';
+import { verifyVersionMap } from './versionMapVerify';
 
 // --- The federation's operational layer: how remotes are located + version-resolved per launch,
 // and how the app degrades when the CDN is unreachable.
@@ -57,6 +58,14 @@ const PROD_CDN_BASE =
 const CDN_CONFIGURED = PROD_CDN_BASE !== PLACEHOLDER_CDN_BASE;
 const PROBE_TIMEOUT_MS = 1500;
 
+// --- Ed25519 public key (base64url, 32-byte raw) that verifies the version-map signature. The
+// matching private key signs the map in tools/build-cdn.mjs and never leaves the build machine.
+// Safe to embed: it can only verify, not sign. ---
+const VERSION_MAP_PUBLIC_KEY = 'NJhE1HMqb1oJluNK8P99sDbfVNPNtyN2FTEnBbCJwEo';
+// Persistent high-water release counter. A version-map whose seq is below this is a replay / forced
+// downgrade and is rejected (see versionMapVerify). Survives restarts via MMKV.
+const VERSION_MAP_SEQ_KEY = 'mf.versionMap.seq';
+
 export type FederationMode = 'dev' | 'cdn' | 'bundled';
 
 export interface FederationStatus {
@@ -107,14 +116,27 @@ const bundledFallbackPlugin: ModuleFederationRuntimePlugin = {
 };
 registerPlugins([bundledFallbackPlugin]);
 
-// --- ScriptManager resolver, active in bundled mode only (dev + cdn return undefined and let
-// Re.Pack's built-in / per-remote resolvers handle loading). Priority 100 so it runs before
-// Re.Pack's auto-added per-remote resolver. Builds an ABSOLUTE file:// URL into the .app's
-// cdn/<platform>/<remote>/<version>/ tree (preserved by the embed build phase) for the remote's
-// container and each chunk; absolute:true makes the native loader read the path directly. ---
+// --- ScriptManager resolver for the prod paths (CDN + bundled offline). Priority 100 so it runs
+// before Re.Pack's built-in per-remote resolver. It maps each script (the remote container or a
+// chunk) to its URL and attaches the code-signature verification mode:
+//   - bundled -> an ABSOLUTE file:// URL into the .app's cdn/<platform>/<remote>/<version>/ tree.
+//   - cdn     -> the same relative path under the CDN base, fetched over HTTP.
+// verifyScriptSignature is 'strict' on iOS and Android: build-cdn.mjs signs every remote chunk
+// with Re.Pack's CodeSigningPlugin (RS256 JWT of the chunk hash) and the public key is embedded in
+// the native app (iOS Info.plist RepackPublicKey, Android res/values/strings.xml RepackPublicKey);
+// the native ScriptManager rejects a tampered or swapped bundle before executing it. Any other
+// platform has no signing tooling, so it falls back to 'off'. DEV returns undefined before this is
+// reached: Metro serves unsigned bundles and Re.Pack's dev resolver handles them. ---
+const SIGNED_PLATFORMS = ['ios', 'android'];
+const VERIFY_SIGNATURE: 'strict' | 'off' = SIGNED_PLATFORMS.includes(
+  Platform.OS,
+)
+  ? 'strict'
+  : 'off';
+
 ScriptManager.shared.addResolver(
   async (scriptId, caller) => {
-    if (status.mode !== 'bundled' || !APP_PATH) return undefined;
+    if (status.mode === 'dev') return undefined;
     const remoteName = REMOTE_NAMES.includes(
       scriptId as (typeof REMOTE_NAMES)[number],
     )
@@ -123,23 +145,38 @@ ScriptManager.shared.addResolver(
         ? caller
         : undefined;
     if (!remoteName) return undefined;
-    const version = BUNDLED_VERSIONS[Platform.OS]?.[remoteName];
+    const version =
+      status.mode === 'cdn'
+        ? status.versions[remoteName]
+        : BUNDLED_VERSIONS[Platform.OS]?.[remoteName];
     if (!version) return undefined;
     const filename =
       scriptId === remoteName
         ? `${remoteName}.container.js.bundle`
         : `${scriptId}.chunk.bundle`;
+    const relativePath = `${Platform.OS}/${remoteName}/${version}/${filename}`;
+    if (status.mode === 'bundled') {
+      if (!APP_PATH) return undefined;
+      return {
+        url: `file://${APP_PATH}/cdn/${relativePath}`,
+        cache: true,
+        absolute: true,
+        verifyScriptSignature: VERIFY_SIGNATURE,
+      };
+    }
     return {
-      url: `file://${APP_PATH}/cdn/${Platform.OS}/${remoteName}/${version}/${filename}`,
+      url: `${PROD_CDN_BASE}/${relativePath}`,
       cache: true,
-      absolute: true,
+      verifyScriptSignature: VERIFY_SIGNATURE,
     };
   },
-  { key: '__bundled_fs__', priority: 100 },
+  { key: '__signed_resolver__', priority: 100 },
 );
 
-// --- Boot-time version-map probe. Doubles as the CDN reachability check: a 200 with valid JSON
-// means CDN is up and gives the per-remote versions for this launch. Failure -> bundled mode. ---
+// --- Boot-time version-map probe. Doubles as the CDN reachability check AND the integrity gate: a
+// 200 gives the signed version-map, which must pass an Ed25519 signature check and a monotonic
+// release-counter (seq) check before its versions are trusted. Any failure (unreachable, bad
+// signature, replayed/older seq) returns null -> bundled mode on the known-good embedded set. ---
 async function fetchVersionMap(): Promise<Record<string, string> | null> {
   try {
     const controller = new AbortController();
@@ -153,7 +190,24 @@ async function fetchVersionMap(): Promise<Record<string, string> | null> {
     );
     clearTimeout(timer);
     if (!res.ok) return null;
-    return (await res.json()) as Record<string, string>;
+    const raw: unknown = await res.json();
+    const highestSeenSeq = mmkvSync.getNumber(VERSION_MAP_SEQ_KEY) ?? 0;
+    const result = verifyVersionMap(
+      raw,
+      VERSION_MAP_PUBLIC_KEY,
+      highestSeenSeq,
+    );
+    if (!result.ok) {
+      console.warn(
+        `[federation] version-map rejected (${result.reason}); using embedded bundles`,
+      );
+      return null;
+    }
+    // Advance the high-water counter so a later replay of an older signed map is refused.
+    if (result.map.seq > highestSeenSeq) {
+      mmkvSync.set(VERSION_MAP_SEQ_KEY, result.map.seq);
+    }
+    return result.map.versions;
   } catch {
     return null;
   }
