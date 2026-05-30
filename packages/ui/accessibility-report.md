@@ -69,7 +69,7 @@
 | 3.3.3 | Error Suggestion | AA | Manual | 👁 manual |
 | 3.3.4 | Error Prevention (Legal, Financial, Data) | AA | Manual | 👁 manual |
 | 4.1.1 | Parsing <br/><sub>no markup to parse on native; removed in WCAG 2.2</sub> | A | N/A | - n/a |
-| 4.1.2 | Name, Role, Value <br/><sub>role + accessible name + state</sub> | A | Automated (Jest) | ✅ pass (2) |
+| 4.1.2 | Name, Role, Value <br/><sub>role + accessible name + state</sub> | A | Automated (Jest) | ✅ pass (3) |
 | 4.1.3 | Status Messages <br/><sub>live region present + has content</sub> | AA | Automated (Jest) | ✅ pass (1) |
 
 ## Methodology

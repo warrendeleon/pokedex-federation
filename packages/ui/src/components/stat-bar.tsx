@@ -27,7 +27,17 @@ export interface StatBarProps {
 export function StatBar({label, value, colourType, max = 200}: StatBarProps) {
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
   return (
-    <Box className="flex-row items-center py-2.5">
+    // One accessible element so a screen reader announces "Attack, 49" as a value, not three
+    // separate text reads. progressbar is the role for a bar showing a magnitude; accessibilityValue
+    // carries the spoken number (the visual scaling to `max` is presentation, so we speak the raw
+    // value rather than a percentage).
+    <Box
+      className="flex-row items-center py-2.5"
+      accessible
+      accessibilityRole="progressbar"
+      accessibilityLabel={label}
+      accessibilityValue={{text: String(value)}}
+    >
       <Text size="sm" className="text-darkGrey w-[72px]">
         {label}
       </Text>

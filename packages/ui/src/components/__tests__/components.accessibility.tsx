@@ -96,6 +96,13 @@ describe('WCAG 4.1.2 - Name, Role, Value', () => {
     fireEvent(card, 'accessibilityAction', {nativeEvent: {actionName: 'remove'}});
     expect(onRemove).toHaveBeenCalledTimes(1);
   });
+
+  it('a stat bar exposes its value through the progressbar role', async () => {
+    await renderWithTokens(<StatBar label="Attack" value={49} colourType="grass" />);
+    const bar = screen.getByRole('progressbar');
+    expectAccessibilityProps(bar, {role: 'progressbar', label: 'Attack'});
+    expect(bar.props.accessibilityValue).toEqual({text: '49'});
+  });
 });
 
 describe('WCAG 4.1.3 - Status Messages', () => {
