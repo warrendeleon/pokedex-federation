@@ -22,7 +22,9 @@
     "lint": "eslint .",
     "test": "jest",
     "a11y:audit:ios": "xcodebuild test -workspace ios/Host.xcworkspace -scheme HostUITests -destination \"platform=iOS Simulator,name=${A11Y_SIM:-iPhone 17 Pro}\" -only-testing:HostUITests/AccessibilityAuditUITests | tee /tmp/ios-a11y-audit.log; node scripts/parse-ios-audit.mjs /tmp/ios-a11y-audit.log ios/accessibility-audit-ios.md",
-    "a11y:audit:ios:report": "node scripts/parse-ios-audit.mjs /tmp/ios-a11y-audit.log ios/accessibility-audit-ios.md"
+    "a11y:audit:ios:report": "node scripts/parse-ios-audit.mjs /tmp/ios-a11y-audit.log ios/accessibility-audit-ios.md",
+    "a11y:audit:android": "cd android && ./gradlew :app:connectedDebugAndroidTest; adb logcat -d > /tmp/android-logcat.log; cd .. && node scripts/parse-android-audit.mjs /tmp/android-logcat.log android/accessibility-audit-android.md",
+    "a11y:audit:android:report": "node scripts/parse-android-audit.mjs /tmp/android-logcat.log android/accessibility-audit-android.md"
   },
   "dependencies": {
     "@expo/html-elements": "^56.0.1",
