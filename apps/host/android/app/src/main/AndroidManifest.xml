@@ -22,6 +22,14 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
+        <!-- Custom-scheme deep links (pokedex://...), the Android counterpart to the iOS
+             CFBundleURLSchemes entry. The URL is handed to ShellEventBridge in MainActivity. -->
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="pokedex" />
+        </intent-filter>
       </activity>
     </application>
 </manifest>

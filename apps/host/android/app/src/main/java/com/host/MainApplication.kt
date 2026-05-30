@@ -14,8 +14,9 @@ class MainApplication : Application(), ReactApplication {
       context = applicationContext,
       packageList =
         PackageList(this).packages.apply {
-          // Packages that cannot be autolinked yet can be added manually here, for example:
-          // add(MyReactNativePackage())
+          // The host's native TurboModules (ShellNavigation + StoreObserver) live in the app target
+          // itself, so they aren't autolinked; register them here.
+          add(HostNativePackage())
         },
     )
   }

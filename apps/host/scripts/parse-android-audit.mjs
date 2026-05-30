@@ -2,9 +2,9 @@
 // Android counterpart to parse-ios-audit.mjs. Google's Accessibility Test Framework (ATF), wired in
 // via Espresso's AccessibilityChecks, logs its results to Logcat as it audits each screen.
 //
-// It also detects the case where the app never booted: the host requires the native TurboModule
-// ShellNavigationModule, which is implemented for iOS only, so on Android the JS aborts before the
-// UI renders and there is nothing to audit. The report says so honestly rather than implying a pass.
+// It also detects the case where the app never booted (e.g. a native TurboModule fails to register,
+// so getEnforcing('ShellNavigationModule') throws and the UI never renders): kept as a regression
+// guard, the report says so honestly rather than implying a pass on an empty app.
 // Run: node scripts/parse-android-audit.mjs <logcat.log> [out.md]
 import { readFileSync, writeFileSync } from 'node:fs';
 

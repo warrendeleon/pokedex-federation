@@ -3,22 +3,24 @@
 The Android half of the native audit layer, mirroring `ios/HostUITests`. Google's Accessibility Test
 Framework (ATF), wired in through Espresso's `AccessibilityChecks`, checks the real rendered view tree
 (contrast, touch-target size, missing labels, duplicate descriptions). `setRunChecksFromRootView(true)`
-audits the full tree before each Espresso action; `setThrowExceptionForErrors(false)` makes it log
-findings rather than gate the build. `scripts/parse-android-audit.mjs` turns the captured logcat into
+audits the full tree before each Espresso action, so a no-op action on the root audits the current
+screen. `scripts/parse-android-audit.mjs` turns the captured logcat into
 `android/accessibility-audit-android.md`.
 
-## Current status: blocked on the native shell
+## Status: runs, audits clean
 
-The harness is complete and the whole pipeline is verified to run, AVD, emulator, Gradle build, the
-instrumentation run, and ATF wiring all work. But it cannot audit any screen yet, because the **host
-app does not boot on Android**: the JS calls `TurboModuleRegistry.getEnforcing('ShellNavigationModule')`,
-and that module (plus `StoreObserverModule` and `QuickBattle`) is implemented for iOS only
-(`ios/Host/*.mm`). There is no Android (Kotlin) implementation, so `AppRegistry` never registers
-`"Host"` and nothing renders.
+The native shell modules are now implemented on Android (Kotlin `ShellNavigationModule` /
+`StoreObserverModule`), so the host app boots and the federated screens render. The test drives the
+Pokédex list and detail and audits each; ATF reports no findings, the same clean result as the iOS
+`performAccessibilityAudit` run on the shared React Native components.
 
-So the test **fails on purpose**, with that reason, instead of passing on an empty app. It will audit
-the real screens as soon as the native shell modules are ported to Android. This is a native-platform
-gap, not an accessibility-testing gap.
+Clean is necessary, not sufficient. ATF samples the rendered view tree and, like Apple's audit,
+under-reports on React Native Fabric content. The Jest token layer and a manual TalkBack pass remain
+required.
+
+A note on result visibility: the Espresso ATF integration has no per-result log hook, so the test uses
+ATF's default behaviour, a genuine finding surfaces as a test failure with the finding in its message,
+rather than a silent log. On a clean app the test passes.
 
 ## Running it
 
