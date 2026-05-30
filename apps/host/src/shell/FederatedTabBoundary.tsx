@@ -2,19 +2,26 @@ import React, { Suspense } from 'react';
 
 import { ErrorState, LoadingState } from '@pokedex/ui';
 
-import { forceReloadRemote } from './scriptManager';
+import {
+  forceReloadRemote,
+  markRemoteBundledFallback,
+  shouldAttemptBundledFallback,
+} from './scriptManager';
 
-// --- Owns the lifecycle of one federated mount point. Three responsibilities:
+// --- Owns the lifecycle of one federated mount point. Responsibilities:
 //
-// 1. Suspense + lazy + retry. Wraps the React.lazy slot; on failure shows ErrorState with a
-//    retry button; on retry it bumps `attempt`, which keys the inner slot so React unmounts +
-//    remounts and creates a fresh React.lazy that re-invokes the loader (a cached failure
-//    would otherwise stick).
+// 1. Suspense + lazy + retry. Wraps the React.lazy slot; on retry it bumps `attempt`, which keys
+//    the inner slot so React unmounts + remounts and creates a fresh React.lazy that re-invokes
+//    the loader (a cached failure would otherwise stick).
 // 2. Explicit export validation. MF V2's runtime sometimes resolves a failed manifest fetch to
 //    a module that lacks the expected export instead of rejecting. The loader validates the
 //    component is a function and throws a clear, attributable error if not.
-// 3. (Hook point) health reporting; the operational layer adds success/failure reporting here
-//    so a repeatedly-failing remote version gets auto-rolled-back on next launch. ---
+// 3. Bundled fallback. The first time a CDN-loaded remote throws -- a failed load (retired
+//    version, network) OR a runtime crash from code built against a newer shared library than
+//    this binary carries -- drop that remote to its embedded copy and reload, showing the loading
+//    state, not the error, during the swap. The embedded copy shipped with the app so it is always
+//    compatible. Only if the embedded copy ALSO throws does the user see the error. This is what
+//    makes "an old app never breaks" hold regardless of what the CDN serves it. ---
 
 interface Props {
   name: string;
@@ -28,10 +35,12 @@ interface Props {
 interface State {
   error: Error | null;
   attempt: number;
+  /** Set once this remote has been dropped to its embedded copy, so a second failure surfaces. */
+  fellBack: boolean;
 }
 
 export class FederatedTabBoundary extends React.Component<Props, State> {
-  state: State = { error: null, attempt: 0 };
+  state: State = { error: null, attempt: 0, fellBack: false };
 
   static getDerivedStateFromError(error: Error): Partial<State> {
     return { error };
@@ -39,6 +48,19 @@ export class FederatedTabBoundary extends React.Component<Props, State> {
 
   componentDidCatch(error: Error) {
     console.error(`[FederatedTabBoundary:${this.props.name}]`, error);
+    // First failure of a CDN remote: switch it to the embedded copy and reload automatically.
+    if (
+      !this.state.fellBack &&
+      shouldAttemptBundledFallback(this.props.remoteName)
+    ) {
+      markRemoteBundledFallback(this.props.remoteName).then(() => {
+        this.setState(s => ({
+          error: null,
+          attempt: s.attempt + 1,
+          fellBack: true,
+        }));
+      });
+    }
   }
 
   private retry = async () => {
@@ -47,10 +69,22 @@ export class FederatedTabBoundary extends React.Component<Props, State> {
   };
 
   render() {
-    const { error } = this.state;
-    const { name, variant = 'light', load, componentProps } = this.props;
+    const { error, fellBack } = this.state;
+    const {
+      name,
+      remoteName,
+      variant = 'light',
+      load,
+      componentProps,
+    } = this.props;
 
     if (error) {
+      // An auto-fallback is about to reload this remote from its embedded copy: show loading, not
+      // the error, so the swap is invisible to the user.
+      if (!fellBack && shouldAttemptBundledFallback(remoteName)) {
+        return <LoadingState variant={variant} caption={`Loading ${name}…`} />;
+      }
+      // No fallback left (already on embedded, or none applicable): this is a real failure.
       return (
         <ErrorState
           variant={variant}

@@ -25,6 +25,13 @@ const DEV_REMOTES = {
 //   MF_CDN_BASE=https://cdn.example.com/mf npm run bundle:ios:prod   (real CDN) ---
 const PROD_CDN_BASE = process.env.MF_CDN_BASE || 'https://cdn.example.com/mf';
 
+// --- The app version this binary is built as, frozen into its JS and sent to the CDN on the boot
+// probe so the CDN can hand back micro-app versions this binary can actually run. Each store
+// release bumps it. For a real release it MUST match the native store version (iOS
+// CFBundleShortVersionString / Android versionName), since that is what users actually carry; here
+// it defaults to the host package version and can be overridden to simulate an old app. ---
+const APP_VERSION = process.env.MF_APP_VERSION || pkg.version;
+
 // --- Function-style config so env.platform and env.mode are available. Mirrors
 // @callstack/repack's tester-federation-v2 host-app pattern. ---
 export default Repack.defineRspackConfig(env => {
@@ -105,6 +112,7 @@ export default Repack.defineRspackConfig(env => {
       // uses the same URL the MF V2 manifest URLs reference. ---
       new rspack.DefinePlugin({
         __MF_CDN_BASE__: JSON.stringify(PROD_CDN_BASE),
+        __APP_VERSION__: JSON.stringify(APP_VERSION),
       }),
       // --- NativeWind: configures PostCSS + Tailwind processing of global.css and the
       // SWC transforms for nativewind's JSX runtime. Official Re.Pack integration; no

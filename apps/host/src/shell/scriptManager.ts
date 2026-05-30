@@ -4,6 +4,11 @@ import type { ModuleFederationRuntimePlugin } from '@module-federation/runtime';
 import { registerPlugins, registerRemotes } from '@module-federation/runtime';
 
 import { BUNDLED_VERSIONS, EMBEDDED_MANIFESTS } from './embedded-manifests';
+import {
+  embeddedManifestRemote,
+  manifestRemote,
+  resolveRemoteLocator,
+} from './remoteLocator';
 import { mmkvStorage, mmkvSync } from './storage';
 import { verifyVersionMap } from './versionMapVerify';
 
@@ -58,6 +63,14 @@ const PROD_CDN_BASE =
 const CDN_CONFIGURED = PROD_CDN_BASE !== PLACEHOLDER_CDN_BASE;
 const PROBE_TIMEOUT_MS = 1500;
 
+// --- This binary's app version (frozen at build time via DefinePlugin). Sent to the CDN on the
+// boot probe so the CDN returns a version-map of micro-app versions this binary can run. An old
+// app keeps getting its own compatible map until its users have moved on; the CDN retires a
+// micro-app version only when no live app version's map references it. ---
+declare const __APP_VERSION__: string;
+const APP_VERSION =
+  typeof __APP_VERSION__ === 'string' ? __APP_VERSION__ : '0.0.0';
+
 // --- Ed25519 public key (base64url, 32-byte raw) that verifies the version-map signature. The
 // matching private key signs the map in tools/build-cdn.mjs and never leaves the build machine.
 // Safe to embed: it can only verify, not sign. ---
@@ -83,35 +96,134 @@ let status: FederationStatus = {
 };
 let initialized = false;
 
+// --- Per-remote bundled fallback. When a remote fails to load from the CDN this session (its
+// version was retired, the network dropped, or the loaded code crashed at runtime), it is added
+// here and from then on resolves to the embedded copy the app shipped with, which is always
+// compatible with this binary. Other remotes keep loading from the CDN. In-memory on purpose: a
+// transient failure self-heals on the next launch when the boot probe re-runs. ---
+const bundledFallbackRemotes = new Set<string>();
+
+function isKnownRemote(name: string): name is (typeof REMOTE_NAMES)[number] {
+  return REMOTE_NAMES.includes(name as (typeof REMOTE_NAMES)[number]);
+}
+
+export function isRemoteBundledFallback(remoteName: string): boolean {
+  return bundledFallbackRemotes.has(remoteName);
+}
+
+// --- Whether the FederatedTabBoundary should drop a failed remote to its embedded copy: only in
+// CDN mode, only once per remote, and only if an embedded version actually exists. In bundled/dev
+// mode there is nothing to fall back to (already embedded, or the dev server owns it). ---
+export function shouldAttemptBundledFallback(remoteName: string): boolean {
+  return (
+    status.mode === 'cdn' &&
+    !bundledFallbackRemotes.has(remoteName) &&
+    !!BUNDLED_VERSIONS[Platform.OS]?.[remoteName]
+  );
+}
+
+// --- Forget a remote's cached runtime so the next mount re-resolves + re-fetches it. Clears the MF
+// container global and the script cache; best-effort, failures here are non-critical. ---
+async function clearRemoteRuntime(remoteName: string): Promise<void> {
+  try {
+    (globalThis as Record<string, unknown>)[remoteName] = undefined;
+  } catch {
+    // clearing the federation global is best-effort
+  }
+  try {
+    await ScriptManager.shared.invalidateScripts([remoteName]);
+  } catch (e) {
+    console.warn(`[federation] invalidateScripts failed for ${remoteName}:`, e);
+  }
+}
+
+// --- Record that a remote must load from its embedded copy from now on. Returns true if this is
+// the first time (so callers can avoid redundant work). No runtime clearing: used mid-load by the
+// manifest fetch, before the remote's container/chunks have loaded. ---
+function addBundledFallback(remoteName: string): boolean {
+  if (!isKnownRemote(remoteName) || bundledFallbackRemotes.has(remoteName)) {
+    return false;
+  }
+  bundledFallbackRemotes.add(remoteName);
+  console.warn(
+    `[federation] ${remoteName} failed from CDN; falling back to its embedded copy`,
+  );
+  return true;
+}
+
+// --- Drop one remote to its embedded copy after a CDN failure, then clear its runtime so the
+// boundary's reload re-resolves it to the embedded files. Used by the boundary, where the remote
+// was already loaded (a runtime crash) and its cached state must be forgotten before reloading. ---
+export async function markRemoteBundledFallback(
+  remoteName: string,
+): Promise<void> {
+  if (addBundledFallback(remoteName)) {
+    await clearRemoteRuntime(remoteName);
+  }
+}
+
 function cdnManifestUrl(name: string, version: string): string {
   return `${PROD_CDN_BASE}/${Platform.OS}/${name}/${version}/mf-manifest.json`;
 }
 
-// --- MF runtime plugin: in bundled mode, intercept the manifest fetch and return the embedded
-// JSON. The MF runtime asks for each remote's mf-manifest.json to learn its shared-dependency
-// config; RN's fetch can't read file://, so we serve it from EMBEDDED_MANIFESTS. Matched by remote
-// name so it works regardless of the version segment in the host bundle's baked-in URL. ---
+function embeddedManifestResponse(remote: string): Response {
+  const manifest = EMBEDDED_MANIFESTS[Platform.OS]?.[remote];
+  if (!manifest) {
+    console.warn(
+      `[mf-fallback] no embedded manifest for ${Platform.OS}/${remote}`,
+    );
+  }
+  return new Response(JSON.stringify(manifest ?? {}), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+// --- Fetch a CDN remote's manifest, but never let it throw: try the network, and on ANY failure
+// (retired version -> 404, network drop) drop the remote to its embedded copy and resolve with the
+// embedded manifest instead. Always resolves to a Response, so the MF runtime's manifest loader
+// can't surface an unhandled "failed to get manifest" that crashes a release build. ---
+async function cdnManifestOrEmbedded(
+  url: string,
+  remote: string,
+): Promise<Response> {
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
+    const res = await fetch(url, { signal: controller.signal });
+    clearTimeout(timer);
+    if (res.ok) return res;
+  } catch {
+    // network error -> fall through to the embedded copy
+  }
+  addBundledFallback(remote);
+  return embeddedManifestResponse(remote);
+}
+
+// --- MF runtime plugin: own each remote's manifest fetch. The MF runtime asks for a remote's
+// mf-manifest.json to learn its shared-dependency config, and if that fetch fails it throws an
+// UNHANDLED "failed to get manifest" that, in a release build, crashes the app before any React
+// error boundary can see it. So this is where the bundled fallback has to start:
+//   - already disk-backed (bundled mode, or this remote fell back earlier) -> serve the embedded
+//     manifest synchronously (RN's fetch can't read file://, so it comes from EMBEDDED_MANIFESTS).
+//   - a healthy CDN remote -> hand off to cdnManifestOrEmbedded, which tries the network and falls
+//     back to the embedded manifest on failure. The chunk loads that follow resolve to the embedded
+//     files (see resolver). Returns undefined to defer for anything that isn't a known manifest. ---
 const bundledFallbackPlugin: ModuleFederationRuntimePlugin = {
   name: 'pokedex-bundled-fallback',
   fetch(url: string) {
-    if (status.mode !== 'bundled') return undefined;
-    const remote = REMOTE_NAMES.find(
-      n => url.includes(`/${n}/`) && url.endsWith('/mf-manifest.json'),
+    const embedded = embeddedManifestRemote(
+      url,
+      REMOTE_NAMES,
+      status.mode,
+      bundledFallbackRemotes,
     );
+    if (embedded) return Promise.resolve(embeddedManifestResponse(embedded));
+
+    if (status.mode !== 'cdn') return undefined;
+    const remote = manifestRemote(url, REMOTE_NAMES);
     if (!remote) return undefined;
-    const manifest = EMBEDDED_MANIFESTS[Platform.OS]?.[remote];
-    if (!manifest) {
-      console.warn(
-        `[mf-fallback] no embedded manifest for ${Platform.OS}/${remote}`,
-      );
-      return undefined;
-    }
-    return Promise.resolve(
-      new Response(JSON.stringify(manifest), {
-        status: 200,
-        headers: { 'Content-Type': 'application/json' },
-      }),
-    );
+    return cdnManifestOrEmbedded(url, remote);
   },
 };
 registerPlugins([bundledFallbackPlugin]);
@@ -135,41 +247,20 @@ const VERIFY_SIGNATURE: 'strict' | 'off' = SIGNED_PLATFORMS.includes(
   : 'off';
 
 ScriptManager.shared.addResolver(
-  async (scriptId, caller) => {
-    if (status.mode === 'dev') return undefined;
-    const remoteName = REMOTE_NAMES.includes(
-      scriptId as (typeof REMOTE_NAMES)[number],
-    )
-      ? scriptId
-      : caller && REMOTE_NAMES.includes(caller as (typeof REMOTE_NAMES)[number])
-        ? caller
-        : undefined;
-    if (!remoteName) return undefined;
-    const version =
-      status.mode === 'cdn'
-        ? status.versions[remoteName]
-        : BUNDLED_VERSIONS[Platform.OS]?.[remoteName];
-    if (!version) return undefined;
-    const filename =
-      scriptId === remoteName
-        ? `${remoteName}.container.js.bundle`
-        : `${scriptId}.chunk.bundle`;
-    const relativePath = `${Platform.OS}/${remoteName}/${version}/${filename}`;
-    if (status.mode === 'bundled') {
-      if (!APP_PATH) return undefined;
-      return {
-        url: `file://${APP_PATH}/cdn/${relativePath}`,
-        cache: true,
-        absolute: true,
-        verifyScriptSignature: VERIFY_SIGNATURE,
-      };
-    }
-    return {
-      url: `${PROD_CDN_BASE}/${relativePath}`,
-      cache: true,
-      verifyScriptSignature: VERIFY_SIGNATURE,
-    };
-  },
+  async (scriptId, caller) =>
+    resolveRemoteLocator({
+      scriptId,
+      caller,
+      remoteNames: REMOTE_NAMES,
+      mode: status.mode,
+      cdnVersions: status.versions,
+      bundledVersions: BUNDLED_VERSIONS[Platform.OS] ?? {},
+      fallbackRemotes: bundledFallbackRemotes,
+      platform: Platform.OS,
+      appPath: APP_PATH,
+      cdnBase: PROD_CDN_BASE,
+      verify: VERIFY_SIGNATURE,
+    }),
   { key: '__signed_resolver__', priority: 100 },
 );
 
@@ -182,7 +273,7 @@ async function fetchVersionMap(): Promise<Record<string, string> | null> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), PROBE_TIMEOUT_MS);
     const res = await fetch(
-      `${PROD_CDN_BASE}/${Platform.OS}/version-map.json`,
+      `${PROD_CDN_BASE}/${Platform.OS}/maps/${APP_VERSION}/version-map.json`,
       {
         signal: controller.signal,
         headers: { 'cache-control': 'no-cache' },
@@ -261,18 +352,17 @@ export function getFederationStatus(): FederationStatus {
 // --- Retry handler for FederatedTabBoundary. Forces every layer that caches remote state to
 // forget the previous (failed) load: the MF runtime entry, the container global, the script
 // cache. DEV + bundled don't re-register (Re.Pack's resolution / the bundled resolver own the
-// entry); CDN re-registers the resolved versioned URL. ---
+// entry). CDN re-registers the resolved versioned URL, EXCEPT for a remote that has fallen back to
+// its embedded copy, where the manifest plugin owns the entry and re-registering the CDN URL would
+// undo the fallback. ---
 export async function forceReloadRemote(remoteName: string): Promise<void> {
-  if (!REMOTE_NAMES.includes(remoteName as (typeof REMOTE_NAMES)[number]))
-    return;
-  if (status.mode === 'cdn') {
+  if (!isKnownRemote(remoteName)) return;
+  if (status.mode === 'cdn' && !bundledFallbackRemotes.has(remoteName)) {
     const version = status.versions[remoteName] ?? 'latest';
     try {
       registerRemotes(
         [{ name: remoteName, entry: cdnManifestUrl(remoteName, version) }],
-        {
-          force: true,
-        },
+        { force: true },
       );
     } catch (e) {
       console.warn(
@@ -281,17 +371,5 @@ export async function forceReloadRemote(remoteName: string): Promise<void> {
       );
     }
   }
-  try {
-    (globalThis as Record<string, unknown>)[remoteName] = undefined;
-  } catch {
-    // best-effort: clearing the federation global is non-critical, ignore failures
-  }
-  try {
-    await ScriptManager.shared.invalidateScripts([remoteName]);
-  } catch (e) {
-    console.warn(
-      `[forceReloadRemote] invalidateScripts failed for ${remoteName}:`,
-      e,
-    );
-  }
+  await clearRemoteRuntime(remoteName);
 }
