@@ -169,7 +169,85 @@ private struct Contestant: Identifiable {
   }
 }
 
-// MARK: - SwiftUI battle screen
+// MARK: - Design tokens (native mirror of packages/ui/src/tokens/colours.ts)
+
+/// The native counterpart to the JS design tokens. Hand-mirrored from colours.ts, which is the
+/// documented single source of truth and already names the native side as a consumer; a fuller
+/// setup would codegen this from that same file. Styling the SwiftUI flows from these tokens is
+/// how the native screens stay on-brand with the React Native shell instead of looking like stock
+/// iOS.
+private enum Theme {
+  static let navy = Color(hex: 0x0F172A)
+  static let blue = Color(hex: 0x3A86FF)
+  static let purple = Color(hex: 0x8338EC)
+  static let midGrey = Color(hex: 0x9A9AB0)
+  static let black = Color(hex: 0x2E3138)
+  static let pokemonGreen = Color(hex: 0x9BE89B)
+}
+
+private extension Color {
+  init(hex: UInt) {
+    self.init(
+      .sRGB,
+      red: Double((hex >> 16) & 0xFF) / 255,
+      green: Double((hex >> 8) & 0xFF) / 255,
+      blue: Double(hex & 0xFF) / 255,
+      opacity: 1
+    )
+  }
+}
+
+// MARK: - "Native iOS" badge
+
+/// A deliberately distinctive marker so it's obvious at a glance that the screen is native SwiftUI,
+/// not React Native. Purple (a token used nowhere else in the app chrome) plus the Swift glyph; RN
+/// screens carry no such badge, so the presence of the pill is the tell.
+private struct NativeBadge: View {
+  var body: some View {
+    HStack(spacing: 6) {
+      Image(systemName: "swift")
+      Text("NATIVE iOS").font(.caption2.weight(.bold)).tracking(0.5)
+    }
+    .foregroundColor(.white)
+    .padding(.horizontal, 12)
+    .padding(.vertical, 6)
+    .background(Theme.purple)
+    .clipShape(Capsule())
+  }
+}
+
+// MARK: - On-brand buttons (mirror the RN navy/blue Button)
+
+private struct PrimaryButton: View {
+  let title: String
+  let action: () -> Void
+  var body: some View {
+    Button(action: action) {
+      Text(title)
+        .font(.headline)
+        .foregroundColor(.white)
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 14)
+        .background(Theme.blue)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+    }
+  }
+}
+
+/// Outlined secondary affordance, used as both a Button label and a NavigationLink label.
+private struct SecondaryLabel: View {
+  let title: String
+  var body: some View {
+    Text(title)
+      .font(.subheadline.weight(.semibold))
+      .foregroundColor(Theme.blue)
+      .frame(maxWidth: .infinity)
+      .padding(.vertical, 12)
+      .overlay(RoundedRectangle(cornerRadius: 14).stroke(Theme.blue.opacity(0.6)))
+  }
+}
+
+// MARK: - SwiftUI battle screen (native)
 
 private struct QuickBattleView: View {
   let contestants: [Contestant]
@@ -182,78 +260,96 @@ private struct QuickBattleView: View {
   var body: some View {
     // NavigationStack so the battle can push a second NATIVE screen (the result) in native land.
     NavigationStack {
-      VStack(spacing: 20) {
-        Text("Native screen · store observer sees \(observedPartySize) in your party")
-          .font(.footnote)
-          .foregroundColor(.secondary)
-          .multilineTextAlignment(.center)
+      ZStack {
+        Theme.navy.ignoresSafeArea()
+        ScrollView {
+          VStack(spacing: 18) {
+            NativeBadge().padding(.top, 8)
 
-        if contestants.isEmpty {
-          Spacer()
-          Text("Your party is empty.\nAdd some Pokémon, then battle.")
-            .multilineTextAlignment(.center)
-            .foregroundColor(.secondary)
-          Spacer()
-        } else {
-          VStack(spacing: 10) {
-            ForEach(contestants) { c in
-              HStack {
-                Text(c.name).font(.title3)
-                Spacer()
-                if winnerId == c.id { Text("🏆") }
+            Text("Store observer sees \(observedPartySize) in your party")
+              .font(.footnote)
+              .foregroundColor(Theme.midGrey)
+              .multilineTextAlignment(.center)
+
+            if contestants.isEmpty {
+              Text("Your party is empty.\nAdd some Pokémon, then battle.")
+                .multilineTextAlignment(.center)
+                .foregroundColor(Theme.midGrey)
+                .padding(.top, 48)
+            } else {
+              VStack(spacing: 10) {
+                ForEach(contestants) { c in
+                  HStack {
+                    Text(c.name).font(.headline).foregroundColor(Theme.black)
+                    Spacer()
+                    if winnerId == c.id { Text("🏆").font(.title3) }
+                  }
+                  .padding(.horizontal, 16)
+                  .padding(.vertical, 14)
+                  .background(winnerId == c.id ? Theme.pokemonGreen : Color.white)
+                  .clipShape(RoundedRectangle(cornerRadius: 16))
+                }
+              }
+
+              if let id = winnerId, let w = contestants.first(where: { $0.id == id }) {
+                Text("\(w.name) wins\(ko ? " by KO!" : "!")")
+                  .font(.title2.bold())
+                  .foregroundColor(.white)
+                  .padding(.top, 4)
+              }
+
+              PrimaryButton(title: winnerId == nil ? "Battle!" : "Battle again") {
+                let pick = contestants.randomElement()
+                winnerId = pick?.id
+                ko = (pick?.id ?? 0) % 2 == 0
+              }
+
+              if let id = winnerId, let w = contestants.first(where: { $0.id == id }) {
+                // Native -> Native: push a second fully-native screen via SwiftUI NavigationStack.
+                // No React renders here and the shell isn't involved; a native flow moving between
+                // two native screens, with the system back button to return.
+                NavigationLink {
+                  BattleResultView(
+                    winnerName: w.name,
+                    leftName: contestants.first?.name ?? w.name,
+                    rightName: contestants.last?.name ?? w.name,
+                    ko: ko,
+                    onDone: finish
+                  )
+                } label: {
+                  SecondaryLabel(title: "See full result")
+                }
+
+                // Native -> RN: ask the shell router to open the RN detail for the winner, then
+                // dismiss so the RN screen it pushed underneath is revealed. Native chose an RN
+                // destination without touching React Navigation directly.
+                Button {
+                  let json = (try? JSONSerialization.data(withJSONObject: ["id": id]))
+                    .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
+                  ShellEventBridge.shared.requestNavigate(
+                    destination: "PokemonDetail",
+                    paramsJson: json
+                  )
+                  finish()
+                } label: {
+                  SecondaryLabel(title: "View \(w.name) in Pokédex")
+                }
               }
             }
           }
-          .padding(.vertical, 8)
-
-          if let id = winnerId, let w = contestants.first(where: { $0.id == id }) {
-            Text("\(w.name) wins\(ko ? " by KO!" : "!")").font(.title2).bold()
-          }
-
-          Button(winnerId == nil ? "Battle!" : "Battle again") {
-            let pick = contestants.randomElement()
-            winnerId = pick?.id
-            ko = (pick?.id ?? 0) % 2 == 0
-          }
-          .buttonStyle(.borderedProminent)
-          .controlSize(.large)
-
-          if let id = winnerId, let w = contestants.first(where: { $0.id == id }) {
-            // Native -> Native: push a second fully-native screen via SwiftUI NavigationStack. No
-            // React renders here and the shell isn't involved; this is a native flow moving between
-            // two native screens, with the system back button to return.
-            NavigationLink {
-              BattleResultView(
-                winnerName: w.name,
-                leftName: contestants.first?.name ?? w.name,
-                rightName: contestants.last?.name ?? w.name,
-                ko: ko,
-                onDone: finish
-              )
-            } label: {
-              Text("See full result")
-            }
-            .controlSize(.large)
-
-            // Native -> RN: ask the shell router to open the RN detail for the winner, then dismiss
-            // this flow so the RN screen it pushed underneath is revealed. Native chose an RN
-            // destination without touching React Navigation directly.
-            Button("View \(w.name) in Pokédex") {
-              ShellEventBridge.shared.requestNavigate(
-                destination: "PokemonDetail",
-                paramsJson: "{\"id\": \(id)}"
-              )
-              finish()
-            }
-            .controlSize(.large)
-          }
+          .padding(24)
         }
-
-        Button("Done", action: finish).padding(.top, 8)
       }
-      .padding(32)
       .navigationTitle("Quick Battle")
       .navigationBarTitleDisplayMode(.inline)
+      .toolbarBackground(Theme.navy, for: .navigationBar)
+      .toolbarBackground(.visible, for: .navigationBar)
+      .toolbarColorScheme(.dark, for: .navigationBar)
+      .toolbar {
+        ToolbarItem(placement: .navigationBarTrailing) {
+          Button("Done", action: finish).foregroundColor(Theme.blue).fontWeight(.semibold)
+        }
+      }
     }
   }
 
@@ -290,23 +386,30 @@ private struct BattleResultView: View {
   let onDone: () -> Void
 
   var body: some View {
-    VStack(spacing: 16) {
-      Text("\(leftName)  vs  \(rightName)")
-        .font(.headline)
-        .foregroundColor(.secondary)
+    ZStack {
+      Theme.navy.ignoresSafeArea()
+      VStack(spacing: 16) {
+        NativeBadge().padding(.top, 8)
+        Text("\(leftName)  vs  \(rightName)")
+          .font(.headline)
+          .foregroundColor(Theme.midGrey)
 
-      Text("🏆").font(.system(size: 64))
-      Text(winnerName).font(.largeTitle).bold()
-      Text(ko ? "Winner by KO!" : "Winner!").font(.title3).foregroundColor(.secondary)
+        Spacer()
 
-      Spacer()
+        Text("🏆").font(.system(size: 72))
+        Text(winnerName).font(.largeTitle.bold()).foregroundColor(.white)
+        Text(ko ? "Winner by KO!" : "Winner!").font(.title3).foregroundColor(Theme.pokemonGreen)
 
-      Button("Done", action: onDone)
-        .buttonStyle(.borderedProminent)
-        .controlSize(.large)
+        Spacer()
+
+        PrimaryButton(title: "Done", action: onDone)
+      }
+      .padding(24)
     }
-    .padding(32)
     .navigationTitle("Result")
     .navigationBarTitleDisplayMode(.inline)
+    .toolbarBackground(Theme.navy, for: .navigationBar)
+    .toolbarBackground(.visible, for: .navigationBar)
+    .toolbarColorScheme(.dark, for: .navigationBar)
   }
 }
