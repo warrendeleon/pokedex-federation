@@ -47,6 +47,10 @@ export interface PartyMember {
   name: string;
   types: string[];
   spriteUri?: string;
+  /** Base-stat total, computed by the detail screen at add time. The native Quick Battle weights
+   *  its random pick by this, so a stronger Pokémon is likelier to win. Optional: members added
+   *  before this existed have none, and the battle treats a missing/zero power as a baseline. */
+  power?: number;
 }
 
 /** What a remote sends when adding: no uid (the slice assigns it). */

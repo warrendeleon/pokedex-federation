@@ -100,6 +100,8 @@ import SwiftUI
 private struct Contestant: Identifiable {
   let id: Int
   let name: String
+  /// Base-stat total handed over from RN; the battle weights its pick by this. Zero means unknown.
+  let power: Int
 }
 
 /// Entry point the ShellNavigationModule TurboModule calls. Decodes the party out of the params
@@ -155,7 +157,11 @@ private struct Contestant: Identifiable {
     else { return [] }
     return party.compactMap { entry in
       guard let id = entry["id"] as? Int else { return nil }
-      return Contestant(id: id, name: (entry["name"] as? String) ?? "#\(id)")
+      return Contestant(
+        id: id,
+        name: (entry["name"] as? String) ?? "#\(id)",
+        power: (entry["power"] as? Int) ?? 0
+      )
     }
   }
 
@@ -280,7 +286,12 @@ private struct QuickBattleView: View {
               VStack(spacing: 10) {
                 ForEach(contestants) { c in
                   HStack {
-                    Text(c.name).font(.headline).foregroundColor(Theme.black)
+                    VStack(alignment: .leading, spacing: 2) {
+                      Text(c.name).font(.headline).foregroundColor(Theme.black)
+                      if c.power > 0 {
+                        Text("Power \(c.power)").font(.caption).foregroundColor(Theme.midGrey)
+                      }
+                    }
                     Spacer()
                     if winnerId == c.id { Text("🏆").font(.title3) }
                   }
@@ -299,9 +310,12 @@ private struct QuickBattleView: View {
               }
 
               PrimaryButton(title: winnerId == nil ? "Battle!" : "Battle again") {
-                let pick = contestants.randomElement()
-                winnerId = pick?.id
-                ko = (pick?.id ?? 0) % 2 == 0
+                let winner = Self.pickWinner(contestants)
+                winnerId = winner?.id
+                // A decisive KO when the party's strongest Pokémon wins; an underdog upset is just
+                // a win. maxPower > 0 guards a party with no stat data (all powers unknown).
+                let maxPower = contestants.map(\.power).max() ?? 0
+                ko = winner.map { $0.power >= maxPower && maxPower > 0 } ?? false
               }
 
               if let id = winnerId, let w = contestants.first(where: { $0.id == id }) {
@@ -351,6 +365,21 @@ private struct QuickBattleView: View {
         }
       }
     }
+  }
+
+  /// Weighted random by power: a stronger Pokémon is likelier to win, but upsets stay possible so
+  /// "Battle again" is worth tapping. A missing/zero power gets a floor of 1 so it can still win
+  /// occasionally rather than never.
+  private static func pickWinner(_ contestants: [Contestant]) -> Contestant? {
+    guard !contestants.isEmpty else { return nil }
+    let weights = contestants.map { max($0.power, 1) }
+    let total = weights.reduce(0, +)
+    var roll = Int.random(in: 0..<total)
+    for (index, contestant) in contestants.enumerated() {
+      if roll < weights[index] { return contestant }
+      roll -= weights[index]
+    }
+    return contestants.last
   }
 
   private func finish() {

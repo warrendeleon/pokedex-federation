@@ -35,6 +35,7 @@ interface PartyMember {
   name: string;
   types: string[];
   spriteUri?: string;
+  power?: number;
 }
 interface PartySliceShape {
   party?: {members: PartyMember[]; lastBattleWinnerId: number | null};
@@ -49,7 +50,8 @@ function PartyMainScreen() {
   const onQuickBattle = async () => {
     // RN -> Native: hand the native flow the current party as input.
     const result = await shellNavigate('QuickBattle', {
-      party: members.map(p => ({id: p.id, name: p.name})),
+      // Hand native the battle-relevant projection: id + name to show, power to weight the pick.
+      party: members.map(p => ({id: p.id, name: p.name, power: p.power ?? 0})),
     });
     // Native -> RN: dispatch the returned winner as a contract action; the host party slice
     // owns the reducer, so partyApp stays decoupled from the host's slice file.

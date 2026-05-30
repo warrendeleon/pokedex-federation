@@ -18,7 +18,8 @@ export const CROSS_MODULE_ACTIONS = {
   },
   detail: {
     /** User added the currently-viewed Pokémon to the party from the Detail screen.
-     *  payload: {id, name, types, spriteUri} (the full member; the host slice assigns the uid). */
+     *  payload: {id, name, types, spriteUri, power} (the full member; the host slice assigns the
+     *  uid; power is the base-stat total the native Quick Battle weights by). */
     addToPartyFromDetail: 'detail/addToParty',
   },
 } as const;

@@ -97,9 +97,18 @@ export function PokemonDetailScreen({route}: Props) {
 
   const primary = data.types[0];
   const onAddToParty = () => {
+    // Base-stat total travels with the member so the native Quick Battle can weight by it without
+    // re-fetching: RN has the stats here, so it passes the battle-relevant projection along.
+    const power = data.stats.reduce((sum, s) => sum + s.value, 0);
     dispatch({
       type: CROSS_MODULE_ACTIONS.detail.addToPartyFromDetail,
-      payload: {id: data.id, name: data.name, types: data.types, spriteUri: data.spriteUri},
+      payload: {
+        id: data.id,
+        name: data.name,
+        types: data.types,
+        spriteUri: data.spriteUri,
+        power,
+      },
     });
     setJustAdded(true);
   };
