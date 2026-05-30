@@ -70,6 +70,9 @@ function RegionsMainScreen({navigation}: NativeStackScreenProps<RegionsParamList
               <Box className="px-4 pt-3">
                 <Pressable
                   className="active:opacity-80"
+                  accessibilityRole="button"
+                  accessibilityLabel={`${item.label}, ${item.generation}`}
+                  accessibilityHint="Opens the regional Pokédex"
                   onPress={() =>
                     navigation.navigate('RegionDex', {regionName: item.name, label: item.label})
                   }>
@@ -107,7 +110,11 @@ function RegionDexScreen({route, navigation}: NativeStackScreenProps<RegionsPara
   return (
     <ScreenContainer>
       <HStack className="items-center px-4 pt-2 pb-1">
-        <Pressable onPress={() => navigation.goBack()} className="active:opacity-60">
+        <Pressable
+          onPress={() => navigation.goBack()}
+          accessibilityRole="button"
+          accessibilityLabel="Back to Regions"
+          className="active:opacity-60">
           <Text size="lg" className="text-blue">
             ‹ Regions
           </Text>
