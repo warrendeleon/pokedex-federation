@@ -1,6 +1,6 @@
 # Pokédex Federation
 
-> A federated micro-app Pokédex built to demonstrate three coupled architectural patterns end-to-end on React Native: **Module Federation V2** (Re.Pack 5), an **RN-owned shell + navigation**, and a **Redux Toolkit single-foundation store**. Plus the operational layer the strategy demands: per-launch version resolution, embedded offline fallback, health-driven auto-rollback, a `shell.navigateTo` routing surface mediating between federated remotes and native flows, and bidirectional native handoff with promise return.
+> A federated micro-app Pokédex built to demonstrate three coupled architectural patterns end-to-end on React Native: **Module Federation V2** (Re.Pack 5), an **RN-owned shell + navigation**, and a **Redux Toolkit single-foundation store**. Plus the operational layer the strategy demands: per-launch version resolution, embedded offline fallback, in-session fallback to the embedded copy when a remote fails, a `shell.navigateTo` routing surface mediating between federated remotes and native flows, and bidirectional native handoff with promise return.
 
 ## What this proves
 
@@ -38,7 +38,7 @@ Eight capabilities, all verified end-to-end:
 | Per-launch version resolution | `cdn/version-map.json` fetched at boot; flip live users between releases |
 | Live two-version flip | Edit map from v1 → v2, relaunch, see the change |
 | Offline-ready bundled fallback | Embedded copy loads when CDN unreachable; banner reflects mode |
-| Health monitoring + auto-rollback | Two consecutive failures of a version → next launch rolls back silently |
+| In-session fallback + operator rollback | A remote that fails to load drops to its embedded copy for the rest of the session; operators roll a version back by republishing the version-map at a higher seq. See [release-guide](docs/release-guide.md#health-and-rollback). |
 | `shell.navigateTo` (RN ↔ native) | Routing table mediates between federated screens and native VCs; bidirectional with promise return |
 
 ## Layout
@@ -52,11 +52,14 @@ pokedex-federation/
 │   ├── regions/          regionsApp federated remote (region browser)
 │   └── detail/           detailApp federated remote (cross-cutting)
 ├── packages/
-│   ├── contracts/        @pokedex/contracts — routeRegistry, MF shared decl, action strings
-│   └── ui/               @pokedex/ui — Gluestack-wrapped design system
-├── cdn/                  built remote bundles + version-map.json (gitignored except version-map)
-├── scripts/              build pipeline (build-prod-ios.sh, embed-remotes-ios.sh, etc.)
-└── docs/                 capability + getting-started + release docs (with Mermaid diagrams)
+│   ├── contracts/        @pokedex/contracts — routeRegistry, action strings, shared baseApi
+│   ├── ui/               @pokedex/ui — Gluestack-wrapped design system
+│   └── a11y-testing/     @pokedex/a11y-testing — Jest accessibility matcher + reporter
+├── mf-shared.mjs         the Module Federation shared-singleton list (host + every remote)
+├── tools/                build-cdn.mjs, gen-signing-keys.mjs
+├── scripts/              install-all.sh, build-prod-ios.sh, verdaccio.sh
+├── cdn-root/             local stand-in CDN assembled by tools/build-cdn.mjs (gitignored)
+└── docs/                 overview, architecture, module-federation, release-guide (with Mermaid diagrams)
 ```
 
 ## Quick start
@@ -89,20 +92,35 @@ Then build and launch the host on a simulator:
 cd apps/host && npm run ios
 ```
 
-Each tab is a separate app, loaded at runtime from its dev server. The on-screen banner reads `MF: dev`.
+Each tab is a separate app, loaded at runtime from its dev server. The on-screen banner reads `dev`.
 
-### 3. Production demo (CDN load, code signing, offline fallback)
+### 3. Production demo: signed CDN load
 
-The production path code-signs each remote and serves them from a CDN, with an embedded offline copy as fallback. The signing private keys are gitignored, so generate your own first; the script embeds the public halves for you:
+The production path code-signs each remote and serves it from a CDN. The host fetches a signed version-map at boot and loads each remote at the version the map pins. The signing private keys are gitignored, so generate your own first (the script embeds the public halves into `Info.plist`, `strings.xml`, and `scriptManager.ts`):
 
 ```sh
-node tools/gen-signing-keys.mjs                                # generate + embed the keypairs
-MF_CDN_BASE=http://localhost:8000 ./scripts/build-prod-ios.sh  # prod bundles + signed CDN
-npm run serve:cdn &                                            # serve the CDN on :8000
-cd apps/host && npm run ios
+node tools/gen-signing-keys.mjs
+MF_CDN_BASE=http://localhost:8000 ./scripts/build-prod-ios.sh   # builds + signs the CDN under cdn-root/
 ```
 
-Tap the simulator: the banner shows `MF: CDN (live)` in green. Kill the CDN server and relaunch, and it flips amber to `MF: BUNDLED (offline fallback)`.
+`build-prod-ios.sh` reports the app versions it built maps for (for example `1.0.0` and `2.0.0`). Serve the CDN, making sure nothing else is on `:8000`:
+
+```sh
+npm run serve:cdn                                               # serves cdn-root/ on :8000
+```
+
+In another terminal, start the host in CDN mode, **pinned to one of those app versions** (this is the step that makes the boot probe find a map):
+
+```sh
+cd apps/host
+MF_CDN_BASE=http://localhost:8000 MF_APP_VERSION=2.0.0 npm start
+```
+
+Then build and launch the host (third terminal): `cd apps/host && npm run ios`.
+
+The banner turns green and reads `CDN · list 1.1.0 · party 1.0.0 · ...`: the host pulled the signed version-map and each remote's pinned version from the CDN, verifying the signature before running the code.
+
+> The amber `BUNDLED` fallback (the host using its embedded offline copies when the CDN is unreachable) is baked into a **release** build, not the dev-server flow above. See [docs/release-guide.md](docs/release-guide.md) for the release build and the offline-fallback demo.
 
 ## Stack
 

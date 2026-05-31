@@ -2,7 +2,8 @@ import { createMMKV, type MMKV } from 'react-native-mmkv';
 
 // --- Single storage engine for the whole host: MMKV (JSI/Nitro-backed, synchronous, far
 // faster than AsyncStorage). One MMKV instance backs both redux-persist and Re.Pack's
-// ScriptManager script cache, and the health store added with the operational layer.
+// ScriptManager script cache, plus the version-map release counter (seq) the operational layer
+// gates on to reject replayed or rolled-back maps.
 //
 // MMKV 4 is Nitro-based: `MMKV` is a type, and instances are created via the createMMKV()
 // factory (there is no `new MMKV()` constructor any more).
@@ -36,6 +37,6 @@ export const mmkvStorage: AsyncKeyValueStorage = {
   },
 };
 
-// --- Direct synchronous access for code that doesn't need the async interface (the health
-// store reads/writes a single JSON blob at boot, where sync is simpler and faster). ---
+// --- Direct synchronous access for code that doesn't need the async interface (the version-map
+// seq counter is read and written at boot, where sync is simpler). ---
 export const mmkvSync = mmkv;
