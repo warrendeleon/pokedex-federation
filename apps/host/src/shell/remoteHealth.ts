@@ -25,6 +25,21 @@ export function nextHealthOnFailure(
     : { version, fails: 1 };
 }
 
+/** Health to persist after a remote renders successfully, or null when there is nothing to write.
+ *  The count is cleared only on a clean CDN render: if the remote fell back to its embedded copy,
+ *  the render is the EMBEDDED version, so the CDN version's failure still stands and must NOT be
+ *  cleared (otherwise a consistently-broken version would reset every launch and never roll back).
+ *  Returns null when the count is already zero, so callers can skip a redundant write. */
+export function nextHealthOnSuccess(
+  prev: RemoteHealth | null,
+  version: string | undefined,
+  fellBackToEmbedded: boolean,
+): RemoteHealth | null {
+  if (fellBackToEmbedded || !version) return null;
+  if (prev && prev.version === version && prev.fails === 0) return null;
+  return { version, fails: 0 };
+}
+
 /** Whether the resolved version has failed enough consecutive launches to roll back to the embedded
  *  copy. Only the version currently being resolved counts, so a fixed redeploy (new version string)
  *  is never blocked by an old version's failures. */

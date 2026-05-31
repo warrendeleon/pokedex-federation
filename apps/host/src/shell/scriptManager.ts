@@ -9,6 +9,7 @@ import { BUNDLED_VERSIONS, EMBEDDED_MANIFESTS } from './embedded-manifests';
 import {
   FAILURE_THRESHOLD,
   nextHealthOnFailure,
+  nextHealthOnSuccess,
   type RemoteHealth,
   shouldRollBackVersion,
 } from './remoteHealth';
@@ -157,15 +158,12 @@ function recordRemoteFailure(remote: string): void {
 // CDN version loaded cleanly, so clear the consecutive-failure count for it. ---
 export function markRemoteLoadSuccess(remote: string): void {
   if (!isKnownRemote(remote)) return;
-  // If the remote fell back to its embedded copy, the successful render is the EMBEDDED version, not
-  // the CDN one, so the CDN version's failure still stands. Only a clean CDN load clears the count,
-  // otherwise a consistently-broken CDN version would reset every launch and never roll back.
-  if (bundledFallbackRemotes.has(remote)) return;
-  const version = status.versions[remote];
-  if (!version) return;
-  const prev = readHealth(remote);
-  if (prev && prev.version === version && prev.fails === 0) return;
-  mmkvSync.set(healthKey(remote), JSON.stringify({ version, fails: 0 }));
+  const next = nextHealthOnSuccess(
+    readHealth(remote),
+    status.versions[remote],
+    bundledFallbackRemotes.has(remote),
+  );
+  if (next) mmkvSync.set(healthKey(remote), JSON.stringify(next));
 }
 
 export function isRemoteBundledFallback(remoteName: string): boolean {

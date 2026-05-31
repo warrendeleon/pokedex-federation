@@ -1,6 +1,7 @@
 import {
   FAILURE_THRESHOLD,
   nextHealthOnFailure,
+  nextHealthOnSuccess,
   shouldRollBackVersion,
   type RemoteHealth,
 } from '../src/shell/remoteHealth';
@@ -30,6 +31,45 @@ describe('nextHealthOnFailure', () => {
       version: '1.2.0',
       fails: 1,
     });
+  });
+});
+
+describe('nextHealthOnSuccess', () => {
+  it('clears the count to zero on a clean CDN render', () => {
+    expect(
+      nextHealthOnSuccess({ version: '1.1.0', fails: 1 }, '1.1.0', false),
+    ).toEqual({ version: '1.1.0', fails: 0 });
+  });
+
+  it('clears from no prior record (first ever render)', () => {
+    expect(nextHealthOnSuccess(null, '1.1.0', false)).toEqual({
+      version: '1.1.0',
+      fails: 0,
+    });
+  });
+
+  it('does NOT clear when the remote fell back to its embedded copy', () => {
+    // The successful render is the embedded version, so the CDN version's failure still stands.
+    // This is the guard that lets a consistently-broken version actually reach the threshold.
+    expect(
+      nextHealthOnSuccess({ version: '1.1.0', fails: 1 }, '1.1.0', true),
+    ).toBeNull();
+  });
+
+  it('does nothing when there is no resolved version', () => {
+    expect(nextHealthOnSuccess(null, undefined, false)).toBeNull();
+  });
+
+  it('skips a redundant write when the count is already zero', () => {
+    expect(
+      nextHealthOnSuccess({ version: '1.1.0', fails: 0 }, '1.1.0', false),
+    ).toBeNull();
+  });
+
+  it('clears for a newly resolved version even if an old version was at zero', () => {
+    expect(
+      nextHealthOnSuccess({ version: '1.1.0', fails: 0 }, '1.2.0', false),
+    ).toEqual({ version: '1.2.0', fails: 0 });
   });
 });
 
@@ -90,11 +130,19 @@ describe('consecutive-failure rollback (end to end)', () => {
     expect(shouldRollBackVersion(health, '1.1.0')).toBe(true);
   });
 
-  it('a successful render between failures stops the rollback', () => {
-    // markRemoteLoadSuccess clears the count to 0; a single later failure is below the threshold.
+  it('a clean CDN render between failures stops the rollback', () => {
+    // A success clears the count to 0; a single later failure is below the threshold.
     let health: RemoteHealth | null = nextHealthOnFailure(null, '1.1.0');
-    health = { version: '1.1.0', fails: 0 };
+    health = nextHealthOnSuccess(health, '1.1.0', false);
     health = nextHealthOnFailure(health, '1.1.0');
     expect(shouldRollBackVersion(health, '1.1.0')).toBe(false);
+  });
+
+  it('an embedded-fallback render does NOT stop the rollback', () => {
+    // The fallback render is the embedded copy, so the CDN version keeps accumulating failures.
+    let health: RemoteHealth | null = nextHealthOnFailure(null, '1.1.0');
+    health = nextHealthOnSuccess(health, '1.1.0', true) ?? health; // fellBack -> null, count holds
+    health = nextHealthOnFailure(health, '1.1.0');
+    expect(shouldRollBackVersion(health, '1.1.0')).toBe(true);
   });
 });
