@@ -30,8 +30,10 @@ packages:
   # --- The whole point of this registry: hosting @pokedex/* packages locally. ---
   '@pokedex/*':
     access: $all
-    publish: $authenticated
-    unpublish: $authenticated
+    # Anonymous publish: this is a throwaway local registry with gitignored storage, so a fresh
+    # clone can publish the @pokedex/* packages via scripts/install-all.sh without `npm adduser`.
+    publish: $anonymous
+    unpublish: $anonymous
 
   # --- Any other scoped package: read from npmjs uplink, no local publishing. ---
   '@*/*':

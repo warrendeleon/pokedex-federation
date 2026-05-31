@@ -51,11 +51,38 @@ const rsaPubB64Line = rsaPubPem
   .join('');
 const edPub = createPublicKey(readFileSync(edPrivPath)).export({ format: 'jwk' });
 
-console.log('\n--- embed these public keys ---\n');
-console.log('iOS  Info.plist  RepackPublicKey (full PEM):\n' + rsaPubPem + '\n');
-console.log(
-  'Android  res/values/strings.xml  RepackPublicKey (single base64 line):\n' + rsaPubB64Line + '\n'
+// --- Embed the public halves into the three places the app verifies against, so a fresh clone
+// is build-ready after this one command. Each patch is a targeted replace of the existing value. ---
+const host = join(repoRoot, 'apps', 'host');
+function embed(relPath, pattern, replacement, label) {
+  const file = join(host, relPath);
+  const before = readFileSync(file, 'utf8');
+  const after = before.replace(pattern, replacement);
+  if (after === before) {
+    console.warn(`  WARNING: could not embed ${label} in ${relPath} (pattern not found)`);
+    return;
+  }
+  writeFileSync(file, after);
+  console.log(`  embedded ${label} -> ${relPath}`);
+}
+
+console.log('\nembedding public keys:');
+embed(
+  'ios/Host/Info.plist',
+  /(<key>RepackPublicKey<\/key>\s*<string>)[\s\S]*?(<\/string>)/,
+  `$1${rsaPubPem}$2`,
+  'RSA public key (iOS Info.plist)'
 );
-console.log(
-  'Host  src/shell/scriptManager.ts  VERSION_MAP_PUBLIC_KEY (base64url):\n' + edPub.x + '\n'
+embed(
+  'android/app/src/main/res/values/strings.xml',
+  /(<string name="RepackPublicKey">)[\s\S]*?(<\/string>)/,
+  `$1${rsaPubB64Line}$2`,
+  'RSA public key (Android strings.xml)'
 );
+embed(
+  'src/shell/scriptManager.ts',
+  /(const VERSION_MAP_PUBLIC_KEY = ')[^']*(')/,
+  `$1${edPub.x}$2`,
+  'Ed25519 public key (host scriptManager.ts)'
+);
+console.log('\ndone. Build the signed CDN with: scripts/build-prod-ios.sh');

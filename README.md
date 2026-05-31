@@ -61,30 +61,48 @@ pokedex-federation/
 
 ## Quick start
 
+Prerequisites: Node 18+, Xcode with an iOS simulator, Ruby + Bundler, CocoaPods. Verdaccio is installed for you by the install script.
+
+### 1. Install
+
 ```sh
-# Prerequisites: Node 18+, Xcode, CocoaPods, Bundler, Verdaccio (npm i -g verdaccio)
-
-# 1. start the local npm registry (for @pokedex/* packages)
-verdaccio &
-
-# 2. install host + every workspace, build the local packages
 ./scripts/install-all.sh
-
-# 3. dev mode (host + per-remote dev servers)
-cd apps/host && npm start                # :8081
-cd apps/list && npm run start:remote     # :8082
-cd apps/party && npm run start:remote    # :8083
-cd apps/regions && npm run start:remote  # :8084
-cd apps/detail && npm run start:remote   # :8085
-cd apps/host && npm run ios              # build + launch on iOS sim
-
-# 4. prod demo (CDN load + bundled fallback + live version flip)
-MF_CDN_BASE=http://localhost:8000 ./scripts/build-prod-ios.sh
-npm run serve:cdn &
-cd apps/host && npm run ios
-# tap the simulator; banner shows "MF: CDN (live)" green
-# kill the CDN, simctl terminate + launch, banner flips amber "MF: BUNDLED (offline fallback)"
 ```
+
+Starts a repo-local Verdaccio registry, publishes the `@pokedex/*` packages into it, installs every app, and runs `pod install` for the host. Re-runnable. Pass `SKIP_PODS=1` to skip the iOS pods if you only need the JS side.
+
+### 2. Run in dev mode
+
+Start the host packager and each remote's dev server (background them, or use one terminal each):
+
+```sh
+cd apps/host    && npm start              # host packager, :8081
+cd apps/list    && npm run start:remote   # :8082
+cd apps/party   && npm run start:remote   # :8083
+cd apps/regions && npm run start:remote   # :8084
+cd apps/detail  && npm run start:remote   # :8085
+```
+
+Then build and launch the host on a simulator:
+
+```sh
+cd apps/host && npm run ios
+```
+
+Each tab is a separate app, loaded at runtime from its dev server. The on-screen banner reads `MF: dev`.
+
+### 3. Production demo (CDN load, code signing, offline fallback)
+
+The production path code-signs each remote and serves them from a CDN, with an embedded offline copy as fallback. The signing private keys are gitignored, so generate your own first; the script embeds the public halves for you:
+
+```sh
+node tools/gen-signing-keys.mjs                                # generate + embed the keypairs
+MF_CDN_BASE=http://localhost:8000 ./scripts/build-prod-ios.sh  # prod bundles + signed CDN
+npm run serve:cdn &                                            # serve the CDN on :8000
+cd apps/host && npm run ios
+```
+
+Tap the simulator: the banner shows `MF: CDN (live)` in green. Kill the CDN server and relaunch, and it flips amber to `MF: BUNDLED (offline fallback)`.
 
 ## Stack
 
