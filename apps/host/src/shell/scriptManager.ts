@@ -7,6 +7,12 @@ import NativeEmbeddedRemotes from '../../specs/NativeEmbeddedRemotesModule';
 
 import { BUNDLED_VERSIONS, EMBEDDED_MANIFESTS } from './embedded-manifests';
 import {
+  FAILURE_THRESHOLD,
+  nextHealthOnFailure,
+  type RemoteHealth,
+  shouldRollBackVersion,
+} from './remoteHealth';
+import {
   embeddedManifestRemote,
   manifestRemote,
   resolveRemoteLocator,
@@ -115,6 +121,53 @@ function isKnownRemote(name: string): name is (typeof REMOTE_NAMES)[number] {
   return REMOTE_NAMES.includes(name as (typeof REMOTE_NAMES)[number]);
 }
 
+// --- Persistent per-remote health, for cross-launch auto-rollback (the pure decision logic lives
+// in remoteHealth.ts). A remote that fails to load at a given CDN version FAILURE_THRESHOLD times in
+// a row is skipped on the next boot: it loads its embedded copy instead of retrying the bad version,
+// a silent rollback. A successful render of the remote clears the count, so only CONSECUTIVE
+// failures roll back, and shipping a new version starts the count over. The count lives in MMKV so
+// it survives the relaunch the rollback takes effect on; bundledFallbackRemotes above stays
+// in-memory for the within-session drop. ---
+const healthKey = (remote: string): string => `mf.health.${remote}`;
+
+function readHealth(remote: string): RemoteHealth | null {
+  const raw = mmkvSync.getString(healthKey(remote));
+  if (!raw) return null;
+  try {
+    const h = JSON.parse(raw) as Partial<RemoteHealth>;
+    return typeof h?.version === 'string' && typeof h?.fails === 'number'
+      ? { version: h.version, fails: h.fails }
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+// Record a failed load of a remote's current CDN version (called from the fallback path).
+function recordRemoteFailure(remote: string): void {
+  const version = status.versions[remote];
+  if (!version) return;
+  mmkvSync.set(
+    healthKey(remote),
+    JSON.stringify(nextHealthOnFailure(readHealth(remote), version)),
+  );
+}
+
+// --- Called by FederatedTabBoundary once a remote's component has actually mounted: its current
+// CDN version loaded cleanly, so clear the consecutive-failure count for it. ---
+export function markRemoteLoadSuccess(remote: string): void {
+  if (!isKnownRemote(remote)) return;
+  // If the remote fell back to its embedded copy, the successful render is the EMBEDDED version, not
+  // the CDN one, so the CDN version's failure still stands. Only a clean CDN load clears the count,
+  // otherwise a consistently-broken CDN version would reset every launch and never roll back.
+  if (bundledFallbackRemotes.has(remote)) return;
+  const version = status.versions[remote];
+  if (!version) return;
+  const prev = readHealth(remote);
+  if (prev && prev.version === version && prev.fails === 0) return;
+  mmkvSync.set(healthKey(remote), JSON.stringify({ version, fails: 0 }));
+}
+
 export function isRemoteBundledFallback(remoteName: string): boolean {
   return bundledFallbackRemotes.has(remoteName);
 }
@@ -156,6 +209,8 @@ function addBundledFallback(remoteName: string): boolean {
   console.warn(
     `[federation] ${remoteName} failed from CDN; falling back to its embedded copy`,
   );
+  // Persist the failure so FAILURE_THRESHOLD consecutive ones roll this version back on next boot.
+  recordRemoteFailure(remoteName);
   return true;
 }
 
@@ -350,6 +405,22 @@ export async function initializeFederation(): Promise<{
 
   const cdnVersions = await fetchVersionMap();
   if (cdnVersions) {
+    // Auto-rollback: any remote whose pinned CDN version has failed FAILURE_THRESHOLD launches in a
+    // row loads its embedded copy this launch instead of retrying the bad version. Added to the
+    // fallback set before registration, so the manifest plugin + resolver serve it from disk.
+    for (const name of REMOTE_NAMES) {
+      const version = cdnVersions[name];
+      if (
+        version &&
+        BUNDLED_VERSIONS[Platform.OS]?.[name] &&
+        shouldRollBackVersion(readHealth(name), version)
+      ) {
+        bundledFallbackRemotes.add(name);
+        console.warn(
+          `[federation] rolling back ${name}: CDN version ${version} failed ${FAILURE_THRESHOLD} launches in a row, loading the embedded copy`,
+        );
+      }
+    }
     registerCdnRemotes(cdnVersions);
     status = { mode: 'cdn', source: PROD_CDN_BASE, versions: cdnVersions };
   } else {

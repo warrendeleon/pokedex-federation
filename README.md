@@ -1,6 +1,6 @@
 # Pokédex Federation
 
-> A federated micro-app Pokédex built to demonstrate three coupled architectural patterns end-to-end on React Native: **Module Federation V2** (Re.Pack 5), an **RN-owned shell + navigation**, and a **Redux Toolkit single-foundation store**. Plus the operational layer the strategy demands: per-launch version resolution, embedded offline fallback, in-session fallback to the embedded copy when a remote fails, a `shell.navigateTo` routing surface mediating between federated remotes and native flows, and bidirectional native handoff with promise return.
+> A federated micro-app Pokédex built to demonstrate three coupled architectural patterns end-to-end on React Native: **Module Federation V2** (Re.Pack 5), an **RN-owned shell + navigation**, and a **Redux Toolkit single-foundation store**. Plus the operational layer the strategy demands: per-launch version resolution, embedded offline fallback, in-session fallback plus health-driven auto-rollback when a remote keeps failing, a `shell.navigateTo` routing surface mediating between federated remotes and native flows, and bidirectional native handoff with promise return.
 
 ## What this proves
 
@@ -38,7 +38,7 @@ Eight capabilities, all verified end-to-end:
 | Per-launch version resolution | `cdn/version-map.json` fetched at boot; flip live users between releases |
 | Live two-version flip | Edit map from v1 → v2, relaunch, see the change |
 | Offline-ready bundled fallback | Embedded copy loads when CDN unreachable; banner reflects mode |
-| In-session fallback + operator rollback | A remote that fails to load drops to its embedded copy for the rest of the session; operators roll a version back by republishing the version-map at a higher seq. See [release-guide](docs/release-guide.md#health-and-rollback). |
+| Health-driven fallback + auto-rollback | A remote that fails drops to its embedded copy for the session; two consecutive failed launches of a version roll it back to embedded automatically on the next boot; operators can also force a rollback by republishing the version-map at a higher seq. See [release-guide](docs/release-guide.md#health-and-rollback). |
 | `shell.navigateTo` (RN ↔ native) | Routing table mediates between federated screens and native VCs; bidirectional with promise return |
 
 ## Layout

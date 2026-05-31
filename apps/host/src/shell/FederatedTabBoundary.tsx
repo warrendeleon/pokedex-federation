@@ -5,6 +5,7 @@ import { ErrorState, LoadingState } from '@pokedex/ui';
 import {
   forceReloadRemote,
   markRemoteBundledFallback,
+  markRemoteLoadSuccess,
   shouldAttemptBundledFallback,
 } from './scriptManager';
 
@@ -102,6 +103,7 @@ export class FederatedTabBoundary extends React.Component<Props, State> {
         name={name}
         variant={variant}
         componentProps={componentProps}
+        onLoaded={() => markRemoteLoadSuccess(remoteName)}
       />
     );
   }
@@ -112,11 +114,13 @@ function FederatedSlot({
   name,
   variant,
   componentProps,
+  onLoaded,
 }: {
   load: Props['load'];
   name: string;
   variant: 'light' | 'dark';
   componentProps?: Record<string, unknown>;
+  onLoaded: () => void;
 }) {
   const Lazy = React.useMemo(
     () =>
@@ -139,6 +143,21 @@ function FederatedSlot({
       fallback={<LoadingState variant={variant} caption={`Loading ${name}…`} />}
     >
       <Lazy {...(componentProps ?? {})} />
+      {/* Sibling of <Lazy> inside Suspense: only mounts once the lazy load resolves, so it is a
+          genuine "this remote rendered" signal (a failed load throws to the error boundary and
+          this never mounts). Clears the remote's consecutive-failure count. */}
+      <LoadSuccessBeacon onLoaded={onLoaded} />
     </Suspense>
   );
+}
+
+function LoadSuccessBeacon({ onLoaded }: { onLoaded: () => void }) {
+  const fired = React.useRef(false);
+  React.useEffect(() => {
+    if (!fired.current) {
+      fired.current = true;
+      onLoaded();
+    }
+  });
+  return null;
 }

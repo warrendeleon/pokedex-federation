@@ -192,7 +192,7 @@ amber, versus the green CDN pill. The app runs fully on the bundles it shipped w
 
 ## Health and rollback
 
-There are three mechanisms. The first two are automatic and live in the host; the third is the operator lever.
+There are four mechanisms. The first three are automatic and live in the host; the fourth is the operator lever.
 
 ### 1. App-wide bundled mode (boot probe fails)
 
@@ -202,7 +202,7 @@ If the version-map probe fails for any reason (unreachable, bad signature, repla
 
 If a single remote fails *after* a healthy boot (its version was retired and 404s, the network drops mid-session, or its loaded code crashes at runtime), only that remote drops to its embedded copy. Other remotes keep loading from the CDN. The failed remote is added to an in-memory set (`bundledFallbackRemotes` in `scriptManager.ts`) and resolves to the embedded copy for the rest of the session.
 
-This is **in-memory on purpose**. A transient failure self-heals on the next launch, when the boot probe re-runs and the remote is tried from the CDN again. There is no persisted "this remote is broken" flag.
+The set itself is **in-memory on purpose**: a *single* transient failure self-heals on the next launch, when the boot probe re-runs and the remote is tried from the CDN again. What does survive a launch is a small per-remote failure *count* (next section), so a version that keeps failing is eventually rolled back instead of retried forever.
 
 `FederatedTabBoundary.tsx` drives the user-visible side, and it is effectively two strikes **within a session**:
 
@@ -220,9 +220,29 @@ flowchart TD
 
 Strike 1: the CDN remote throws; the boundary swaps it to the embedded copy behind a loading state, so the swap is invisible. Strike 2: if the embedded copy *also* throws, the user finally sees the error with a Retry. The embedded copy shipped with the app and is always compatible with this binary, so strike 2 is rare. This is what makes "an old app never breaks regardless of what the CDN serves it" hold.
 
-> The previous releases had no persistent per-remote health record across launches. Rollback across launches is the operator lever below, driven by the seq counter, not an automatic per-remote counter.
+### 3. Per-remote cross-launch auto-rollback (one version keeps failing)
 
-### 3. Operator rollback (republish a higher seq)
+In-session fallback (above) saves the current run, but on its own it would retry the same bad CDN version on every launch forever. The host closes that gap with a tiny persistent health record per remote, so a version that fails repeatedly is dropped to its embedded copy automatically, with no operator action.
+
+The record is one MMKV key per remote (`mf.health.<remote>`), holding the CDN version it is counting and a consecutive-failure count. The pure transitions live in `remoteHealth.ts`; `scriptManager.ts` persists them:
+
+- **On a failed load** (`addBundledFallback`, the common point for both a failed manifest fetch and a runtime crash that drops to embedded): increment the count for the resolved version. A failure of a *different* version (a new release) resets the count to 1, so a fixed redeploy is never blocked by the old version's failures.
+- **On a clean render** (`markRemoteLoadSuccess`, fired by `FederatedTabBoundary` only when the remote actually rendered *from the CDN*, not from a fallback): clear the count back to 0.
+- **At boot** (`initializeFederation`, before remotes are registered): if the version the map now pins has already failed `FAILURE_THRESHOLD` (2) launches in a row, add it to the bundled-fallback set up front. The manifest plugin and resolver then serve its embedded copy for the whole session, and the host logs `rolling back <remote>: CDN version <v> failed 2 launches in a row`.
+
+Because the count is keyed on `(remote, version)`, the rollback is sticky for exactly the bad version and lifts itself the moment the operator ships a different version. A first single failure still self-heals; only the second consecutive failure of the *same* version trips the rollback.
+
+```mermaid
+flowchart TD
+  B["boot: map pins remote @ version V"] --> H{"persisted health for V<br/>fails >= 2?"}
+  H -->|no| CDN["register CDN remote, try V"]
+  H -->|"yes"| RB["roll back: serve embedded copy<br/>(log the rollback)"]
+  CDN --> R{"renders from CDN?"}
+  R -->|yes| OK["clear count to 0"]
+  R -->|"no (fell back to embedded)"| INC["count++ for V<br/>(persists to next launch)"]
+```
+
+### 4. Operator rollback (republish a higher seq)
 
 To pull a bad remote version from the field deliberately, point the app version's map back at the older remote version and republish with a **higher** seq:
 

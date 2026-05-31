@@ -193,7 +193,7 @@ So: RS256 on chunks, verified natively, protects content. Ed25519 on the map, ve
 
 The promise is that whatever the CDN serves, a shipped binary still works, because it carries an embedded copy of every remote that is always compatible with it. Falling back to the embedded copy is always safe.
 
-Fallback is per-remote, in-memory, and self-healing. One remote dropping to its embedded copy does not touch the others. The set is in-memory on purpose: a transient failure clears on the next launch when the boot probe re-runs. The flag that decides whether to attempt it, `shouldAttemptBundledFallback`, is true only in CDN mode, only once per remote, and only when an embedded copy of that remote actually exists.
+Fallback is per-remote. One remote dropping to its embedded copy does not touch the others. The active set (`bundledFallbackRemotes`) is in-memory, so a single transient failure clears on the next launch when the boot probe re-runs. The flag that decides whether to attempt it, `shouldAttemptBundledFallback`, is true only in CDN mode, only once per remote, and only when an embedded copy of that remote actually exists. Alongside the set, the host persists a per-remote consecutive-failure count (`remoteHealth.ts`); a version that fails twice in a row is rolled back to its embedded copy at the next boot rather than retried. That cross-launch auto-rollback is covered in [release-guide.md](release-guide.md#health-and-rollback).
 
 There are two levels at which a CDN load can fail, and the fallback has to catch both.
 

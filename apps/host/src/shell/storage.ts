@@ -2,8 +2,9 @@ import { createMMKV, type MMKV } from 'react-native-mmkv';
 
 // --- Single storage engine for the whole host: MMKV (JSI/Nitro-backed, synchronous, far
 // faster than AsyncStorage). One MMKV instance backs both redux-persist and Re.Pack's
-// ScriptManager script cache, plus the version-map release counter (seq) the operational layer
-// gates on to reject replayed or rolled-back maps.
+// ScriptManager script cache, plus the operational state the host keeps between launches: the
+// version-map release counter (seq) it gates on to reject replayed or rolled-back maps, and the
+// per-remote consecutive-failure counts behind the auto-rollback (see remoteHealth.ts).
 //
 // MMKV 4 is Nitro-based: `MMKV` is a type, and instances are created via the createMMKV()
 // factory (there is no `new MMKV()` constructor any more).
